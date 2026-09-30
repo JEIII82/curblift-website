@@ -1,15 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, ValidationError } from "@formspree/react";
 import {
   ArrowRight,
   Building2,
-  Camera,
   CheckCircle2,
-  ChevronRight,
   ClipboardCheck,
-  Clock,
   Droplets,
-  Gauge,
   MapPin,
   Menu,
   MessageSquare,
@@ -139,8 +135,8 @@ const faqs = [
 ];
 
 const beforeAfter = {
-  before: "/images/before-sidewalk.jpg",
-  after: "/images/after-sidewalk.jpg",
+  before: "/images/before-sidewalk.webp",
+  after: "/images/after-sidewalk.webp",
 };
 
 function Logo() {
@@ -149,7 +145,7 @@ function Logo() {
       <img
         src="/rinsepoint-logo.svg"
         alt="RinsePoint Exterior Cleaning"
-        className="h-auto w-[168px] sm:w-[192px]"
+        width="900" height="190" className="h-auto w-[180px] sm:w-[218px]"
       />
     </a>
   );
@@ -157,6 +153,16 @@ function Logo() {
 
 function Header() {
   const [open, setOpen] = useState(false);
+  const menuButton = useRef(null);
+  const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event) {
+      if (event.key === "Escape") { setOpen(false); menuButton.current?.focus(); }
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
   const nav = [
     ["Services", "/services/"],
     ["Results", "/results/"],
@@ -174,6 +180,7 @@ function Header() {
             <a
               key={href}
               href={href}
+              aria-current={currentPath === href.replace(/\/+$/, "") ? "page" : undefined}
               className="text-sm font-bold text-slate-600 transition hover:text-slate-950"
             >
               {label}
@@ -200,6 +207,8 @@ function Header() {
           type="button"
           aria-label={open ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={open}
+          aria-controls="mobile-navigation"
+          ref={menuButton}
           onClick={() => setOpen(!open)}
           className="rounded-lg border border-slate-200 p-3 text-slate-800 lg:hidden"
         >
@@ -208,8 +217,8 @@ function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white px-5 py-5 lg:hidden">
-          <nav className="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Mobile navigation">
+        <div id="mobile-navigation" className="border-t border-slate-200 bg-white px-5 py-5 lg:hidden">
+          <nav onClick={() => setOpen(false)} className="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Mobile navigation">
             {nav.map(([label, href]) => (
               <a
                 key={href}
@@ -287,8 +296,9 @@ function Footer() {
 }
 
 function MobileBar() {
+  const quoteLink = window.location.pathname.replace(/\/+$/, "") === "/contact" ? "#quote-form" : "/contact/#quote-form";
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:hidden">
+    <div className="mobile-actions fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:hidden">
       <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
         <a
           href={business.smsLink}
@@ -297,7 +307,7 @@ function MobileBar() {
           <MessageSquare className="h-4 w-4" /> Text Photos
         </a>
         <a
-          href="/contact/"
+          href={quoteLink}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 px-4 py-3 text-sm font-black text-white"
         >
           Get a Quote
@@ -322,10 +332,11 @@ function BeforeAfter({ priority = false }) {
   return (
     <div className="overflow-hidden border border-slate-200 bg-white shadow-xl">
       <div className="grid grid-cols-2">
-        <div className="relative aspect-[4/3] overflow-hidden bg-slate-200">
+        <div className="relative aspect-[3/4] overflow-hidden bg-slate-200">
           <img
             src={beforeAfter.before}
             alt="Concrete sidewalk before pressure washing"
+            width="768" height="1024"
             decoding="async"
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
@@ -333,10 +344,11 @@ function BeforeAfter({ priority = false }) {
           />
           <span className="absolute left-3 top-3 bg-slate-950 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">Before</span>
         </div>
-        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
           <img
             src={beforeAfter.after}
             alt="Concrete sidewalk after pressure washing"
+            width="768" height="1024"
             decoding="async"
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
@@ -364,12 +376,18 @@ function PageHero({ eyebrow, title, text, children }) {
 
 function QuoteForm() {
   const [state, handleSubmit] = useForm("meedvvbl");
+  const requestedPackage = new URLSearchParams(window.location.search).get("package");
+  const selectedPackage = packages.find((pkg) => pkg.name === requestedPackage);
+  const successHeading = useRef(null);
+  useEffect(() => {
+    if (state.succeeded) successHeading.current?.focus();
+  }, [state.succeeded]);
 
   if (state.succeeded) {
     return (
       <div className="border border-cyan-200 bg-cyan-50 p-8 md:p-10">
         <CheckCircle2 className="h-10 w-10 text-cyan-700" />
-        <h2 className="mt-5 text-3xl font-black text-slate-950">Quote request sent.</h2>
+        <h2 ref={successHeading} tabIndex={-1} className="mt-5 text-3xl font-black text-slate-950">Quote request sent.</h2>
         <p className="mt-3 max-w-lg leading-7 text-slate-600">
           Thanks for reaching out to RinsePoint. We received your request and will follow up as soon as possible.
         </p>
@@ -381,9 +399,13 @@ function QuoteForm() {
   }
 
   return (
-    <form className="border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={handleSubmit}>
+    <form id="quote-form" className="scroll-mt-28 border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={handleSubmit} aria-busy={state.submitting}>
       <input type="hidden" name="_subject" value="New RinsePoint Quote Request" />
       <input type="hidden" name="business" value="RinsePoint Exterior Cleaning" />
+      <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+      {selectedPackage && <><input type="hidden" name="package" value={selectedPackage.name} /><p className="mb-6 rounded-lg bg-cyan-50 p-4 text-sm text-slate-700">Quoting: <strong>{selectedPackage.name}</strong> · from {selectedPackage.price}</p></>}
+      <h2 className="text-2xl font-black text-slate-950">Get your free quote</h2>
+      <p className="mt-2 mb-6 text-sm leading-6 text-slate-600">Tell us a little about the job. We’ll follow up to confirm the details and price.</p>
       <div className="grid gap-5">
         <div>
           <label htmlFor="quote-name" className="mb-2 block text-sm font-black text-slate-700">Name</label>
@@ -412,7 +434,7 @@ function QuoteForm() {
           </div>
           <div>
             <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">Service needed</label>
-            <select id="quote-service" name="service" required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
+            <select id="quote-service" name="service" defaultValue={selectedPackage ? "Driveway / concrete cleaning" : ""} required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
               <option value="">Choose a service</option>
               <option>Driveway / concrete cleaning</option>
               <option>Sidewalk / walkway cleaning</option>
@@ -431,7 +453,8 @@ function QuoteForm() {
         <button type="submit" disabled={state.submitting} className="rounded-lg bg-cyan-500 px-6 py-4 font-extrabold text-white transition hover:bg-cyan-600 disabled:opacity-60">
           {state.submitting ? "Sending..." : "Request My Quote"}
         </button>
-        <ValidationError errors={state.errors} className="text-sm font-bold text-red-600" />
+        <div role="alert"><ValidationError errors={state.errors} className="text-sm font-bold text-red-600" />
+        {state.errors && <p className="mt-2 text-sm text-slate-600">Having trouble? <a href={business.smsLink} className="font-bold underline">Text us your request</a> or call {business.phone}.</p>}</div>
         <p className="text-xs leading-5 text-slate-500">
           By submitting, you agree that RinsePoint may contact you about this request. See our <a href="/privacy.html" className="font-bold text-cyan-700 hover:underline">Privacy Policy</a>.
         </p>
@@ -440,164 +463,75 @@ function QuoteForm() {
   );
 }
 
+function PackageCards({ dark = false }) {
+  return (
+    <div className={`package-grid${dark ? " on-dark" : ""}`}>
+      {packages.map((pkg) => (
+        <article key={pkg.name} className={`package-card${pkg.featured ? " featured" : ""}`}>
+          <p className="package-label">{pkg.featured ? "Driveway + entry" : "Starting at"}</p>
+          <h3>{pkg.name}</h3>
+          <div className="package-price">{pkg.price}<span> / starting price</span></div>
+          <p className="package-note">{pkg.note}</p>
+          <a className="package-link" href={`/contact/?package=${encodeURIComponent(pkg.name)}`}>Get a quote for this <ArrowRight size={17} aria-hidden="true" /></a>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function HomePage() {
   return (
     <>
-      <section className="overflow-hidden bg-slate-950 text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-16 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
-              <MapPin className="h-4 w-4" /> Allen, Texas
+      <section className="home-hero">
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <p className="eyebrow"><span className="location-dot" /> ALLEN, TEXAS & NEARBY COMMUNITIES</p>
+            <h1>A cleaner driveway.<br /><span>A better welcome.</span></h1>
+            <p className="hero-description">Pressure washing for the places you come home to. We clean driveways, sidewalks, and patios in Allen and across nearby North Texas.</p>
+            <div className="hero-buttons">
+              <a href="/contact/" className="button-primary">Get a Free Quote <ArrowRight size={19} aria-hidden="true" /></a>
+              <a href={business.smsLink} className="button-secondary"><MessageSquare size={19} aria-hidden="true" /> Text Us Photos</a>
             </div>
-            <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-7xl">
-              Professional pressure washing for the concrete people notice first.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              RinsePoint cleans driveways, sidewalks, walkways, patios, and exterior concrete in Allen and nearby North Texas communities. Clear quotes. Straightforward service. Visible results.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="/contact/" className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 px-6 py-4 font-extrabold text-white transition hover:bg-cyan-600">
-                Get a Free Quote <ArrowRight className="h-5 w-5" />
-              </a>
-              <a href={business.smsLink} className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white px-6 py-4 font-extrabold text-slate-950">
-                <MessageSquare className="h-5 w-5" /> Text Photos
-              </a>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 text-sm font-bold text-slate-300">
-              <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-cyan-300" /> Owner-operated</span>
-              <span className="flex items-center gap-2"><Camera className="h-4 w-4 text-cyan-300" /> Photo quotes</span>
-              <span className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-cyan-300" /> Clear scope</span>
-            </div>
+            <p className="hero-reassurance">Free estimates. Price confirmed before we start.</p>
+            <div className="hero-local"><img src="/rinsepoint-mark.svg" alt="" width="38" height="38" /><div><strong>Local care. A visible difference.</strong><span>Owner-operated in Allen, TX</span></div></div>
           </div>
-          <div>
+          <div className="hero-project">
+            <div className="project-topline"><span>THE RINSEPOINT DIFFERENCE</span><span>01 / SIDEWALK</span></div>
             <BeforeAfter priority />
-            <div className="border-x border-b border-slate-200 bg-white px-5 py-4 text-slate-900">
-              <p className="text-sm font-black">Actual project result</p>
-              <p className="mt-1 text-sm text-slate-500">Concrete sidewalk cleaning.</p>
-            </div>
+            <div className="project-caption"><span>One walkway. A fresh start.</span><a href="/results/">See the results <ArrowRight size={16} aria-hidden="true" /></a></div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto grid max-w-7xl divide-y divide-slate-200 px-5 md:grid-cols-3 md:divide-x md:divide-y-0 lg:px-8">
-          {[
-            ["Surface-aware cleaning", "The method is matched to the surface and condition."],
-            ["Straightforward pricing", "Scope and starting price are explained before the job."],
-            ["Fast communication", "Call, text, or send photos to get the process moving."],
-          ].map(([title, text]) => (
-            <div key={title} className="py-7 md:px-8 md:first:pl-0 md:last:pr-0">
-              <p className="font-black text-slate-950">{title}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
-            </div>
+      <section className="trust-strip" aria-label="Our approach">
+        <div className="trust-inner">
+          {[[ShieldCheck, "Care for your property", "Cleaning matched to the surface."], [ClipboardCheck, "Know the price first", "A clear quote before work begins."], [MessageSquare, "Talk to a local business", "Call, text, or request a quote online."]].map(([Icon, title, description]) => (
+            <div className="trust-item" key={title}><Icon size={25} aria-hidden="true" /><div><h2>{title}</h2><p>{description}</p></div></div>
           ))}
         </div>
       </section>
 
-      <section className="px-5 py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <SectionIntro eyebrow="Services" title="Exterior cleaning focused on the surfaces that shape curb appeal." text="RinsePoint is starting with the work we can execute well right now: concrete and compatible exterior hard surfaces." align="left" />
-            <a href="/services/" className="inline-flex items-center gap-2 font-black text-cyan-800">View all services <ArrowRight className="h-4 w-4" /></a>
-          </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {services.map((service) => {
-              const Icon = service.icon;
-              return (
-                <div key={service.title} className="border-t-4 border-cyan-500 bg-slate-50 p-6">
-                  <Icon className="h-7 w-7 text-cyan-700" />
-                  <h3 className="mt-5 text-xl font-black text-slate-950">{service.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{service.short}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <section className="home-section">
+        <div className="section-heading-row"><SectionIntro eyebrow="What we clean" title="Goodbye, built-up grime." text="From the front walk to the back patio, give your outdoor surfaces a fresh start." align="left" /><a className="text-link" href="/services/">Explore our services <ArrowRight size={18} aria-hidden="true" /></a></div>
+        <div className="service-grid">{services.map((service, index) => {
+          const Icon = service.icon;
+          return <a key={service.title} className="service-card" href={`/services/#service-${index + 1}`}><div className="service-card-top"><Icon size={28} aria-hidden="true" /><span>0{index + 1}</span></div><h3>{service.title}</h3><p>{service.short}</p><span className="service-more">View service <ArrowRight size={16} aria-hidden="true" /></span></a>;
+        })}</div>
       </section>
 
-      <section className="bg-slate-50 px-5 py-20 lg:px-8">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2">
-          <BeforeAfter />
-          <div>
-            <SectionIntro eyebrow="Results" title="The work should speak for itself." text="We use real project photography instead of stock photos or fake reviews. As the project library grows, this section will grow with it." align="left" />
-            <div className="mt-7 grid gap-3">
-              {[
-                "Actual before-and-after project photos",
-                "Clear expectations around permanent stains",
-                "Scope confirmed before the job starts",
-                "Finished work checked before we leave",
-              ].map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700" />
-                  <span className="font-bold text-slate-700">{item}</span>
-                </div>
-              ))}
-            </div>
-            <a href="/results/" className="mt-8 inline-flex items-center gap-2 font-black text-cyan-800">See project results <ArrowRight className="h-4 w-4" /></a>
-          </div>
-        </div>
+      <section className="pricing-section"><div className="home-section">
+        <SectionIntro eyebrow="Simple starting prices" title="A fresh look. A clear price." text="Choose a starting point below. Send us the details and we’ll confirm a quote for your property." light align="left" />
+        <PackageCards dark />
+        <p className="pricing-footnote">Final pricing depends on area, buildup, stains, and access. Specialty treatments may cost extra and are discussed before work starts.</p>
+      </div></section>
+
+      <section className="home-section process-section"><div><SectionIntro eyebrow="From quote to clean" title="Three steps to a cleaner space." text="Start with a few photos. We’ll take it from there." align="left" /><a className="text-link" href={business.smsLink}>Text photos to {business.phone} <ArrowRight size={18} aria-hidden="true" /></a></div>
+        <ol className="process-list">{process.map((step, index) => <li key={step.title}><span className="step-number">0{index + 1}</span><div><h3>{step.title}</h3><p>{step.text}</p></div></li>)}</ol>
       </section>
 
-      <section className="px-5 py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <SectionIntro eyebrow="How it works" title="Simple from the first text to the final rinse." text="No complicated booking process and no surprise scope changes after the work starts." />
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {process.map((step, index) => (
-              <div key={step.title} className="border-t border-slate-300 pt-6">
-                <div className="text-sm font-black text-cyan-700">0{index + 1}</div>
-                <h3 className="mt-4 text-2xl font-black text-slate-950">{step.title}</h3>
-                <p className="mt-3 leading-7 text-slate-600">{step.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-slate-950 px-5 py-20 text-white lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <SectionIntro eyebrow="Starting packages" title="Enough pricing to know what to expect." text="Every property is different, but a useful starting point is better than making customers guess." light />
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {packages.map((pkg) => (
-              <div key={pkg.name} className={pkg.featured ? "border border-cyan-400 bg-white p-7 text-slate-950" : "border border-white/15 bg-white/5 p-7"}>
-                <p className={pkg.featured ? "text-xs font-black uppercase tracking-[0.18em] text-cyan-700" : "text-xs font-black uppercase tracking-[0.18em] text-cyan-300"}>Starting at</p>
-                <div className="mt-3 text-4xl font-black">{pkg.price}</div>
-                <h3 className="mt-4 text-xl font-black">{pkg.name}</h3>
-                <p className={pkg.featured ? "mt-3 text-sm leading-7 text-slate-600" : "mt-3 text-sm leading-7 text-slate-300"}>{pkg.note}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-sm leading-6 text-slate-400">
-            Final pricing depends on size, buildup, stains, access, and specialty treatment needs. Photos are the fastest way to get an accurate quote.
-          </p>
-        </div>
-      </section>
-
-      <section className="px-5 py-20 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
-          <div>
-            <SectionIntro eyebrow="Service area" title="Based in Allen. Built for nearby North Texas." text="RinsePoint serves Allen and nearby communities where the schedule and travel make sense for the job." align="left" />
-            <a href="/areas/" className="mt-7 inline-flex items-center gap-2 font-black text-cyan-800">Check your area <ArrowRight className="h-4 w-4" /></a>
-          </div>
-          <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200 sm:grid-cols-3">
-            {serviceAreas.slice(0, 9).map((area) => (
-              <div key={area} className="bg-white p-5 text-center font-black text-slate-800">{area}</div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-cyan-50 px-5 py-16 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 md:flex-row md:items-center">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Ready when you are</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Send a few photos. Get a clear starting point.</h2>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <a href={business.smsLink} className="rounded-lg border border-slate-300 bg-white px-6 py-4 text-center font-extrabold text-slate-900">Text Photos</a>
-            <a href="/contact/" className="rounded-lg bg-slate-950 px-6 py-4 text-center font-extrabold text-white">Request a Quote</a>
-          </div>
-        </div>
-      </section>
+      <section className="local-section"><div className="home-section local-grid"><div><SectionIntro eyebrow="Your neighborhood, our neighborhood" title="Based in Allen. Close to home." text="Serving homeowners and small businesses in Allen, McKinney, Plano, and surrounding communities." align="left" /><a className="text-link" href="/areas/">See our service area <ArrowRight size={18} aria-hidden="true" /></a></div><div className="area-panel"><MapPin size={30} aria-hidden="true" /><h3>Allen, Texas</h3><p>And the communities around us.</p><div className="area-chips">{serviceAreas.filter(area => area !== "Allen").map(area => <span key={area}>{area}</span>)}</div><a href="/contact/">Have a property nearby? Let’s talk. <ArrowRight size={16} aria-hidden="true" /></a></div></div></section>
+      <FAQSection />
+      <section className="closing-cta"><div><p className="eyebrow">CLEAN STARTS HERE</p><h2>Let’s bring back<br />your curb appeal.</h2><p>Tell us what needs cleaning. We’ll help with the next step.</p></div><div className="closing-actions"><a href="/contact/" className="button-primary">Get a Free Quote <ArrowRight size={19} aria-hidden="true" /></a><a href={business.phoneLink}><Phone size={18} aria-hidden="true" /> {business.phone}</a></div></section>
     </>
   );
 }
@@ -605,16 +539,16 @@ function HomePage() {
 function ServicesPage() {
   return (
     <>
-      <PageHero eyebrow="Services" title="Focused services. Clear scope. Professional execution." text="RinsePoint currently specializes in pressure washing and exterior hard-surface cleaning for homes and small businesses in Allen and nearby communities.">
+      <PageHero eyebrow="Services" title="A fresh start for your outdoor surfaces." text="RinsePoint specializes in pressure washing and exterior hard-surface cleaning for homes and small businesses in Allen and nearby communities.">
         <a href="/contact/" className="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-6 py-4 font-extrabold text-white">Request a Quote <ArrowRight className="h-5 w-5" /></a>
       </PageHero>
 
       <section className="px-5 py-20 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
-          {services.map((service) => {
+          {services.map((service, index) => {
             const Icon = service.icon;
             return (
-              <article key={service.title} className="border border-slate-200 p-7 md:p-9">
+              <article id={`service-${index + 1}`} key={service.title} className="border border-slate-200 p-7 md:p-9">
                 <Icon className="h-8 w-8 text-cyan-700" />
                 <h2 className="mt-5 text-2xl font-black text-slate-950">{service.title}</h2>
                 <p className="mt-4 leading-8 text-slate-600">{service.detail}</p>
@@ -626,17 +560,8 @@ function ServicesPage() {
 
       <section className="bg-slate-50 px-5 py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <SectionIntro eyebrow="Starting packages" title="Common residential starting points." text="These are not one-size-fits-all guarantees. They are useful starting prices so you know the general range before sending photos." />
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {packages.map((pkg) => (
-              <div key={pkg.name} className={pkg.featured ? "border-2 border-cyan-500 bg-white p-7" : "border border-slate-200 bg-white p-7"}>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">Starting at</p>
-                <div className="mt-3 text-4xl font-black text-slate-950">{pkg.price}</div>
-                <h3 className="mt-4 text-xl font-black text-slate-950">{pkg.name}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{pkg.note}</p>
-              </div>
-            ))}
-          </div>
+          <SectionIntro eyebrow="Starting packages" title="Common residential starting points." text="Start with the package that fits your project. We’ll confirm the scope and final price before scheduling." />
+          <PackageCards />
         </div>
       </section>
 
@@ -670,7 +595,7 @@ function ServicesPage() {
 function ResultsPage() {
   return (
     <>
-      <PageHero eyebrow="Results" title="Real work, shown clearly." text="RinsePoint uses actual project photos so you can judge the cleaning difference for yourself. No stock-photo gallery and no manufactured reviews." />
+      <PageHero eyebrow="Results" title="Real work, shown clearly." text="Take a closer look at our sidewalk cleaning work, from the initial buildup to the finished surface." />
       <section className="px-5 py-20 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
           <div>
@@ -681,7 +606,7 @@ function ResultsPage() {
             </div>
           </div>
           <div>
-            <SectionIntro eyebrow="Project 01" title="Visible surface improvement without overselling the result." text="Some stains can be permanent or require specialty treatment. We would rather set the expectation correctly than promise that every mark will disappear." align="left" />
+            <SectionIntro eyebrow="Project 01" title="A cleaner path to your front door." text="Some stains can be permanent or require specialty treatment. We would rather set the expectation correctly than promise that every mark will disappear." align="left" />
             <div className="mt-7 grid gap-4">
               {[
                 "Real before-and-after photos",
@@ -701,9 +626,9 @@ function ResultsPage() {
       <section className="bg-slate-50 px-5 py-16 lg:px-8">
         <div className="mx-auto max-w-7xl border-l-4 border-cyan-500 bg-white p-7 md:p-9">
           <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-700">Project library</p>
-          <h2 className="mt-3 text-3xl font-black text-slate-950">More real jobs will be added as they are completed.</h2>
+          <h2 className="mt-3 text-3xl font-black text-slate-950">See what’s possible for your property.</h2>
           <p className="mt-4 max-w-2xl leading-8 text-slate-600">
-            The goal is to build this page with genuine RinsePoint work from Allen, Parker, Lucas, Fairview, McKinney, and nearby areas—not filler photography.
+            Have a driveway, sidewalk, or patio that needs attention? Send us photos of your space and we’ll talk through the cleaning options.
           </p>
         </div>
       </section>
@@ -718,7 +643,7 @@ function AboutPage() {
       <section className="px-5 py-20 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2">
           <div>
-            <SectionIntro eyebrow="The approach" title="Professional does not have to mean complicated." text="Customers should know what is being cleaned, what it is expected to cost, what access is needed, and what happens next. That is the standard RinsePoint is being built around." align="left" />
+            <SectionIntro eyebrow="The approach" title="Good service starts with a conversation." text="Customers should know what is being cleaned, what it is expected to cost, what access is needed, and what happens next. We explain the details before you book." align="left" />
           </div>
           <div className="grid gap-px bg-slate-200 border border-slate-200 sm:grid-cols-2">
             {[
@@ -739,14 +664,14 @@ function AboutPage() {
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">How we build trust</p>
-            <h2 className="mt-4 text-3xl font-black md:text-4xl">Real work first. Claims second.</h2>
+            <h2 className="mt-4 text-3xl font-black md:text-4xl">Your property deserves careful attention.</h2>
           </div>
           <div className="text-lg leading-8 text-slate-300">
             <p>
-              RinsePoint is a growing local business. The website is built around services we are actually ready to perform, real project photography, and clear starting prices.
+              From a single front walkway to a driveway and patio, we take time to understand the job and choose a cleaning approach suited to the surface.
             </p>
             <p className="mt-5">
-              As the company adds equipment, services, completed projects, and customer reviews, the site will expand with real proof instead of pretending those things already exist.
+              You can reach us directly with questions, send photos for a quote, and discuss any problem areas before work begins. After cleaning, we review the finished area.
             </p>
           </div>
         </div>
@@ -758,7 +683,7 @@ function AboutPage() {
 function AreasPage() {
   return (
     <>
-      <PageHero eyebrow="Service areas" title="Allen first. Nearby North Texas when the job makes sense." text="RinsePoint is based in Allen and serves nearby communities for residential and small commercial exterior cleaning." />
+      <PageHero eyebrow="Service areas" title="Local pressure washing in Allen and nearby." text="RinsePoint is based in Allen and serves nearby communities for residential and small commercial exterior cleaning." />
       <section className="px-5 py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 gap-px border border-slate-200 bg-slate-200 sm:grid-cols-3 lg:grid-cols-4">
@@ -787,7 +712,7 @@ function FAQSection() {
   return (
     <section className="bg-slate-50 px-5 py-20 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <SectionIntro eyebrow="FAQ" title="Questions worth answering before you book." />
+        <SectionIntro eyebrow="FAQ" title="A few things you may be wondering." />
         <div className="mt-10 divide-y divide-slate-200 border-y border-slate-200">
           {faqs.map((faq) => (
             <details key={faq.q} className="group py-5">
@@ -820,7 +745,7 @@ function ContactPage() {
 
       <section className="px-5 py-16 lg:px-8 lg:py-20">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.75fr_1.25fr]">
-          <div>
+          <div className="order-2 lg:order-1">
             <h2 className="text-2xl font-black text-slate-950">What helps us quote faster</h2>
             <div className="mt-6 grid gap-5">
               {[
@@ -841,7 +766,7 @@ function ContactPage() {
               <p className="mt-2 text-sm leading-6 text-slate-600">Call or text. Photos by text are usually the fastest way to start.</p>
             </div>
           </div>
-          <QuoteForm />
+          <div className="order-1 lg:order-2"><QuoteForm /></div>
         </div>
       </section>
     </>
@@ -875,8 +800,9 @@ function CurrentPage() {
 export default function App() {
   return (
     <div className="min-h-screen bg-white pb-20 text-slate-950 lg:pb-0">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <CurrentPage />
       </main>
       <Footer />
