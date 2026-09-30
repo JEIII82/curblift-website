@@ -425,8 +425,10 @@ function QuoteForm() {
         />
 
         <p className="text-center text-xs leading-5 text-slate-500">
-          Your request will be sent directly through Formspree. For the fastest
-          quote, you can also text photos to {business.phone}.
+          Your request will be sent securely through Formspree so we can respond
+          to your quote request. By submitting, you agree that RinsePoint may
+          contact you about this request. <a href="/privacy.html" className="font-bold text-cyan-700 underline-offset-2 hover:underline">Privacy</a>.
+          For the fastest quote, you can also text photos to {business.phone}.
         </p>
       </div>
     </form>
@@ -528,8 +530,8 @@ export default function PowerWashingWebsite() {
                 <Sparkles className="h-4 w-4" /> {business.serviceLine}
               </div>
               <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-7xl">
-                Cleaner concrete.{" "}
-                <span className="text-cyan-300">Better curb appeal.</span>
+                Pressure washing in Allen, TX.{" "}
+                <span className="text-cyan-300">Cleaner concrete. Better curb appeal.</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
                 RinsePoint provides driveway, sidewalk, patio, and concrete
@@ -892,6 +894,7 @@ export default function PowerWashingWebsite() {
             <a href={business.phoneLink}>Call {business.phone}</a>
             <a href={business.smsLink}>Text Photos</a>
             <a href="#quote">Free Quote</a>
+            <a href="/privacy.html">Privacy</a>
           </div>
         </div>
       </footer>
