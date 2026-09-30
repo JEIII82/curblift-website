@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useForm, ValidationError } from "@formspree/react";
-import { motion } from "framer-motion";
 import {
   Phone,
   MessageSquare,
@@ -208,7 +207,7 @@ function CTAButtons({ dark = true }) {
   );
 }
 
-function BeforeAfterCard({ compact = false }) {
+function BeforeAfterCard({ compact = false, priority = false }) {
   return (
     <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/10">
       <div className="grid grid-cols-2">
@@ -217,6 +216,8 @@ function BeforeAfterCard({ compact = false }) {
             src={beforeAfter.before}
             alt="Before pressure washing a concrete sidewalk"
             decoding="async"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="h-full w-full object-cover"
           />
           <div className="absolute left-3 top-3 rounded-full bg-slate-950 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
@@ -228,6 +229,8 @@ function BeforeAfterCard({ compact = false }) {
             src={beforeAfter.after}
             alt="After pressure washing a concrete sidewalk"
             decoding="async"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className="h-full w-full object-cover"
           />
           <div className="absolute right-3 top-3 rounded-full bg-cyan-500 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
@@ -440,7 +443,7 @@ export default function PowerWashingWebsite() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
           <Logo />
 
-          <nav className="hidden items-center gap-7 lg:flex">
+          <nav aria-label="Primary navigation" className="hidden items-center gap-7 lg:flex">
             {nav.map((item) => (
               <a
                 key={item}
@@ -519,16 +522,12 @@ export default function PowerWashingWebsite() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.35),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.24),transparent_35%)]" />
           <div className="absolute inset-0 opacity-10 [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:44px_44px]" />
 
-          <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 lg:grid-cols-2 lg:px-8 lg:py-28">
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+          <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 lg:grid-cols-2 lg:gap-12 lg:px-8 lg:py-28">
+            <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100">
                 <Sparkles className="h-4 w-4" /> {business.serviceLine}
               </div>
-              <h1 className="text-5xl font-black tracking-tight md:text-7xl">
+              <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-7xl">
                 Cleaner concrete.{" "}
                 <span className="text-cyan-300">Better curb appeal.</span>
               </h1>
@@ -551,15 +550,10 @@ export default function PowerWashingWebsite() {
                   <ClipboardCheck className="h-5 w-5 text-cyan-300" /> Clear scope
                 </div>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative"
-            >
-              <BeforeAfterCard />
+            <div className="relative">
+              <BeforeAfterCard priority />
 
               <div className="mt-5 flex items-center gap-3 rounded-3xl bg-white p-5 text-slate-950 shadow-xl">
                 <CheckCircle2 className="h-6 w-6 shrink-0 text-cyan-600" />
@@ -570,7 +564,7 @@ export default function PowerWashingWebsite() {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
