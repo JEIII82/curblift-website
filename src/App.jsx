@@ -130,7 +130,7 @@ const faqs = [
   },
   {
     q: "Are you insured?",
-    a: "RinsePoint is not advertising full insurance coverage yet, but we are working toward a professional business setup. Contact us for current service availability, job details, and booking information before scheduling.",
+    a: "Insurance coverage is currently being finalized. Contact us before booking if you need current coverage details for your property or project.",
   },
   {
     q: "What areas do you serve?",
@@ -716,8 +716,8 @@ export default function PowerWashingWebsite() {
                 Simple. Fast. Professional.
               </h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-                A clear process builds trust before customers ever call. This
-                makes booking feel easy and low-risk.
+                From the first photo quote to the final rinse, you will know
+                what happens next and what is included in the job.
               </p>
             </div>
             <div className="grid gap-4">
@@ -745,7 +745,7 @@ export default function PowerWashingWebsite() {
           <SectionHeader
             eyebrow="Early Results"
             title="Real results are the best proof."
-            text="RinsePoint is just getting started, so this section will grow with more real project photos and customer feedback over time."
+            text="We document real project results so you can see the difference before requesting a quote."
           />
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <BeforeAfterCard />
@@ -776,7 +776,7 @@ export default function PowerWashingWebsite() {
                 "Cleaner sidewalks and walkways",
                 "Brighter concrete and entryways",
                 "Better first impression before guests arrive",
-                "Great photo proof for future customers",
+                "A cleaner, brighter first impression",
               ].map((item) => (
                 <div
                   key={item}
