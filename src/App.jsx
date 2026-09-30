@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Droplets,
   ShieldCheck,
-  Star,
   MapPin,
   Sparkles,
   Building2,
@@ -16,7 +15,6 @@ import {
   CheckCircle2,
   Menu,
   X,
-  Mail,
   Clock,
   ChevronRight,
   DollarSign,
@@ -32,7 +30,6 @@ const business = {
   phone: "(972) 672-0212",
   smsLink: "sms:+19726720212",
   phoneLink: "tel:+19726720212",
-  email: "CurbLiftClean@gmail.com",
 };
 
 const beforeAfter = {
@@ -129,8 +126,8 @@ const faqs = [
     a: "Not always. If we have access to the cleaning areas and an outdoor water source, many jobs can be completed while you are away.",
   },
   {
-    q: "Are you insured?",
-    a: "RinsePoint is not advertising full insurance coverage yet, but we are working toward a professional business setup. Contact us for current service availability, job details, and booking information before scheduling.",
+    q: "What should I do before service?",
+    a: "Please make sure the cleaning area is accessible and that an outdoor water source is available. Moving vehicles, small furniture, and fragile items beforehand helps the job go faster.",
   },
   {
     q: "What areas do you serve?",
@@ -138,29 +135,24 @@ const faqs = [
   },
 ];
 
-const earlyResults = [
-  {
-    quote:
-      "The sidewalk and concrete looked completely different after the cleaning. The before and after was night and day.",
-    name: "Early Project Result",
-    city: "Allen, TX",
-  },
-];
-
 function Logo() {
   return (
-    <a href="#home" className="flex items-center gap-3">
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white shadow-lg shadow-cyan-500/25">
-        <Droplets className="h-7 w-7" />
-        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-cyan-600">
-          RP
-        </span>
-      </div>
+    <a
+      href="#home"
+      aria-label="RinsePoint home"
+      className="flex items-center gap-3"
+    >
+      <img
+        src="/rinsepoint-mark.svg"
+        alt=""
+        aria-hidden="true"
+        className="h-12 w-12"
+      />
       <div>
-        <p className="text-lg font-black leading-5 tracking-tight text-slate-950">
+        <p className="text-xl font-black leading-5 tracking-tight text-slate-950">
           {business.shortName}
         </p>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-600">
+        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.19em] text-cyan-600">
           Exterior Cleaning
         </p>
       </div>
@@ -201,17 +193,17 @@ function CTAButtons({ dark = true }) {
         href="#quote"
         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-500 px-6 py-4 text-base font-extrabold text-white shadow-lg shadow-cyan-500/25 transition hover:-translate-y-0.5 hover:bg-cyan-600"
       >
-        Get a Free Quote <ChevronRight className="h-5 w-5" />
+        Get a Free Photo Quote <ChevronRight className="h-5 w-5" />
       </a>
       <a
-        href={business.phoneLink}
+        href={business.smsLink}
         className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-base font-extrabold shadow-lg transition hover:-translate-y-0.5 ${
           dark
             ? "border-white/20 bg-white text-slate-950 hover:bg-slate-100"
             : "border-slate-200 bg-slate-950 text-white hover:bg-slate-800"
         }`}
       >
-        <Phone className="h-5 w-5" /> Call Now
+        <MessageSquare className="h-5 w-5" /> Text Photos
       </a>
     </div>
   );
@@ -224,7 +216,8 @@ function BeforeAfterCard({ compact = false }) {
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-200">
           <img
             src={beforeAfter.before}
-            alt="Before power washing sidewalk"
+            alt="Before pressure washing a concrete sidewalk"
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div className="absolute left-3 top-3 rounded-full bg-slate-950 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
@@ -234,7 +227,8 @@ function BeforeAfterCard({ compact = false }) {
         <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <img
             src={beforeAfter.after}
-            alt="After power washing sidewalk"
+            alt="After pressure washing a concrete sidewalk"
+            decoding="async"
             className="h-full w-full object-cover"
           />
           <div className="absolute right-3 top-3 rounded-full bg-cyan-500 px-3 py-1 text-xs font-black uppercase tracking-widest text-white">
@@ -294,12 +288,14 @@ function QuoteForm() {
 
       <div className="grid gap-4">
         <div>
-          <label className="mb-2 block text-sm font-black text-slate-700">
+          <label htmlFor="quote-name" className="mb-2 block text-sm font-black text-slate-700">
             Name
           </label>
           <input
+            id="quote-name"
             className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
             name="name"
+            autoComplete="name"
             placeholder="Your name"
             required
           />
@@ -312,13 +308,16 @@ function QuoteForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-black text-slate-700">
+            <label htmlFor="quote-phone" className="mb-2 block text-sm font-black text-slate-700">
               Phone
             </label>
             <input
+              id="quote-phone"
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="phone"
               type="tel"
+              autoComplete="tel"
+              inputMode="tel"
               placeholder="Phone number"
               required
             />
@@ -329,15 +328,16 @@ function QuoteForm() {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-black text-slate-700">
-              Email
+            <label htmlFor="quote-email" className="mb-2 block text-sm font-black text-slate-700">
+              Email <span className="font-medium text-slate-400">(optional)</span>
             </label>
             <input
+              id="quote-email"
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="email"
               type="email"
+              autoComplete="email"
               placeholder="Email address"
-              required
             />
             <ValidationError
               field="email"
@@ -349,12 +349,14 @@ function QuoteForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-black text-slate-700">
+            <label htmlFor="quote-city" className="mb-2 block text-sm font-black text-slate-700">
               City
             </label>
             <input
+              id="quote-city"
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="city"
+              autoComplete="address-level2"
               placeholder="Allen, McKinney, Plano..."
               required
             />
@@ -365,10 +367,11 @@ function QuoteForm() {
             />
           </div>
           <div>
-            <label className="mb-2 block text-sm font-black text-slate-700">
+            <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">
               Service Needed
             </label>
             <select
+              id="quote-service"
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="service"
               required
@@ -388,10 +391,11 @@ function QuoteForm() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-black text-slate-700">
+          <label htmlFor="quote-details" className="mb-2 block text-sm font-black text-slate-700">
             Project Details
           </label>
           <textarea
+            id="quote-details"
             rows="5"
             className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
             name="message"
@@ -410,7 +414,7 @@ function QuoteForm() {
           type="submit"
           disabled={state.submitting}
         >
-          {state.submitting ? "Sending..." : "Request My Free Quote"}
+          {state.submitting ? "Sending..." : "Get My Free Quote"}
         </button>
 
         <ValidationError
@@ -432,7 +436,7 @@ export default function PowerWashingWebsite() {
   const nav = ["About", "Services", "Pricing", "Results", "Areas", "FAQ", "Quote"];
 
   return (
-    <div className="min-h-screen bg-white text-slate-950">
+    <div className="min-h-screen bg-white pb-20 text-slate-950 lg:pb-0">
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
           <Logo />
@@ -465,6 +469,10 @@ export default function PowerWashingWebsite() {
           </div>
 
           <button
+            type="button"
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
             onClick={() => setOpen(!open)}
             className="rounded-xl border border-slate-200 p-3 lg:hidden"
           >
@@ -473,7 +481,10 @@ export default function PowerWashingWebsite() {
         </div>
 
         {open && (
-          <div className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden">
+          <div
+            id="mobile-navigation"
+            className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden"
+          >
             <div className="flex flex-col gap-3">
               {nav.map((item) => (
                 <a
@@ -485,12 +496,20 @@ export default function PowerWashingWebsite() {
                   {item}
                 </a>
               ))}
-              <a
-                href={business.phoneLink}
-                className="rounded-xl bg-slate-950 px-4 py-3 text-center font-extrabold text-white"
-              >
-                Call {business.phone}
-              </a>
+              <div className="grid grid-cols-2 gap-3">
+                <a
+                  href={business.smsLink}
+                  className="rounded-xl border border-slate-200 px-4 py-3 text-center font-extrabold text-slate-800"
+                >
+                  Text Photos
+                </a>
+                <a
+                  href={business.phoneLink}
+                  className="rounded-xl bg-slate-950 px-4 py-3 text-center font-extrabold text-white"
+                >
+                  Call Now
+                </a>
+              </div>
             </div>
           </div>
         )}
@@ -511,13 +530,13 @@ export default function PowerWashingWebsite() {
                 <Sparkles className="h-4 w-4" /> {business.serviceLine}
               </div>
               <h1 className="text-5xl font-black tracking-tight md:text-7xl">
-                Restore your home.{" "}
-                <span className="text-cyan-300">Boost your curb appeal.</span>
+                Cleaner concrete.{" "}
+                <span className="text-cyan-300">Better curb appeal.</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-                {business.name} helps homeowners and small businesses across
-                Allen and North Texas remove dirt, grime, algae, and stains from
-                exterior surfaces.
+                RinsePoint provides driveway, sidewalk, patio, and concrete
+                cleaning in Allen and nearby North Texas communities. Send a few
+                photos for a fast, straightforward quote.
               </p>
               <div className="mt-8">
                 <CTAButtons />
@@ -527,10 +546,10 @@ export default function PowerWashingWebsite() {
                   <MapPin className="h-5 w-5 text-cyan-300" /> Locally owned
                 </div>
                 <div className="flex items-center gap-2">
-                  <Camera className="h-5 w-5 text-cyan-300" /> Photo quotes
+                  <Camera className="h-5 w-5 text-cyan-300" /> Fast photo quotes
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-cyan-300" /> Fast scheduling
+                  <ClipboardCheck className="h-5 w-5 text-cyan-300" /> Clear scope
                 </div>
               </div>
             </motion.div>
@@ -543,15 +562,14 @@ export default function PowerWashingWebsite() {
             >
               <BeforeAfterCard />
 
-              <div className="mt-5 rounded-3xl bg-white p-5 text-slate-950 shadow-xl">
-                <div className="flex items-center gap-1 text-yellow-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-current" />
-                  ))}
+              <div className="mt-5 flex items-center gap-3 rounded-3xl bg-white p-5 text-slate-950 shadow-xl">
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-cyan-600" />
+                <div>
+                  <p className="font-black">Real before-and-after results</p>
+                  <p className="mt-1 text-sm font-medium text-slate-500">
+                    Actual project photos, not stock imagery.
+                  </p>
                 </div>
-                <p className="mt-2 font-black">
-                  Real results. Local service.
-                </p>
               </div>
             </motion.div>
           </div>
@@ -701,8 +719,8 @@ export default function PowerWashingWebsite() {
                 Simple. Fast. Professional.
               </h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-                A clear process builds trust before customers ever call. This
-                makes booking feel easy and low-risk.
+                From the first photo quote to the final rinse, you will know what
+                is included and what happens next.
               </p>
             </div>
             <div className="grid gap-4">
@@ -730,38 +748,29 @@ export default function PowerWashingWebsite() {
           <SectionHeader
             eyebrow="Early Results"
             title="Real results are the best proof."
-            text="RinsePoint is just getting started, so this section will grow with more real project photos and customer feedback over time."
+            text="We document real project results so you can see the difference before requesting a quote."
           />
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <BeforeAfterCard />
             <div className="grid gap-5">
-              {earlyResults.map((result) => (
-                <div
-                  key={result.quote}
-                  className="rounded-3xl bg-cyan-50 p-7 shadow-sm"
-                >
-                  <div className="mb-4 flex text-yellow-500">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-lg font-bold leading-8 text-slate-800">
-                    “{result.quote}”
-                  </p>
-                  <p className="mt-5 text-sm font-black text-slate-950">
-                    {result.name}
-                  </p>
-                  <p className="text-sm font-bold text-cyan-700">
-                    {result.city}
-                  </p>
-                </div>
-              ))}
+              <div className="rounded-3xl bg-cyan-50 p-7 shadow-sm">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-700">
+                  What the service includes
+                </p>
+                <h3 className="mt-3 text-2xl font-black text-slate-950">
+                  A straightforward clean from setup to final rinse.
+                </h3>
+                <p className="mt-3 leading-7 text-slate-600">
+                  We confirm the scope before starting, clean the agreed areas,
+                  rinse surrounding surfaces, and check the finished result.
+                </p>
+              </div>
 
               {[
                 "Cleaner sidewalks and walkways",
                 "Brighter concrete and entryways",
-                "Better first impression before guests arrive",
-                "Great photo proof for future customers",
+                "A more polished first impression",
+                "Real photos you can compare before and after",
               ].map((item) => (
                 <div
                   key={item}
@@ -785,9 +794,9 @@ export default function PowerWashingWebsite() {
                 Proudly serving Allen and nearby North Texas communities.
               </h2>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Local service area pages can help later with Google searches
-                like “pressure washing in Allen TX” and “driveway cleaning near
-                me.”
+                Based in Allen and serving nearby North Texas communities.
+                Not sure whether your property is in range? Send the address and
+                a few photos and we will confirm availability.
               </p>
               <div className="mt-8 flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-5">
                 <MapPin className="h-7 w-7 text-cyan-600" />
@@ -855,19 +864,30 @@ export default function PowerWashingWebsite() {
                   <MessageSquare className="h-5 w-5 text-cyan-300" /> Text
                   photos for a quote
                 </a>
-                <a
-                  href={`mailto:${business.email}`}
-                  className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 font-black text-white hover:bg-white/15"
-                >
-                  <Mail className="h-5 w-5 text-cyan-300" /> {business.email}
-                </a>
-              </div>
+                              </div>
             </div>
 
             <QuoteForm />
           </div>
         </section>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
+          <a
+            href={business.smsLink}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-900"
+          >
+            <MessageSquare className="h-4 w-4" /> Text Photos
+          </a>
+          <a
+            href="#quote"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-3 text-sm font-black text-white"
+          >
+            Get a Quote
+          </a>
+        </div>
+      </div>
 
       <footer className="border-t border-slate-200 bg-white px-5 py-10 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -877,7 +897,7 @@ export default function PowerWashingWebsite() {
           </div>
           <div className="flex flex-col gap-2 text-sm font-bold text-slate-600 sm:flex-row sm:gap-5">
             <a href={business.phoneLink}>Call {business.phone}</a>
-            <a href={`mailto:${business.email}`}>{business.email}</a>
+            <a href={business.smsLink}>Text Photos</a>
             <a href="#quote">Free Quote</a>
           </div>
         </div>
