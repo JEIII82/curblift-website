@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Menu,
   X,
-  Clock,
   ChevronRight,
   DollarSign,
   Info,
@@ -565,9 +564,9 @@ export default function PowerWashingWebsite() {
               <div className="mt-5 flex items-center gap-3 rounded-3xl bg-white p-5 text-slate-950 shadow-xl">
                 <CheckCircle2 className="h-6 w-6 shrink-0 text-cyan-600" />
                 <div>
-                  <p className="font-black">Real before-and-after results</p>
+                  <p className="font-black">Before-and-after project results</p>
                   <p className="mt-1 text-sm font-medium text-slate-500">
-                    Actual project photos, not stock imagery.
+                    See the cleaning difference side by side.
                   </p>
                 </div>
               </div>
@@ -746,9 +745,9 @@ export default function PowerWashingWebsite() {
 
         <section id="results" className="px-5 py-20 lg:px-8">
           <SectionHeader
-            eyebrow="Early Results"
+            eyebrow="Project Results"
             title="Real results are the best proof."
-            text="We document real project results so you can see the difference before requesting a quote."
+            text="We document project results so you can see the difference before requesting a quote."
           />
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <BeforeAfterCard />
