@@ -1,16 +1,33 @@
-# React + Vite
+# RinsePoint Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Marketing site for **RinsePoint Exterior Cleaning**, serving Allen, Texas and nearby North Texas communities.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React
+- Vite
+- Tailwind CSS
+- Framer Motion
+- Lucide React
+- Formspree
+- Vercel
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Production
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The `main` branch deploys through Vercel. The primary customer-facing domain is:
+
+**https://rinsepoint.com/**
+
+## Brand
+
+- Brand: RinsePoint
+- Descriptor: Exterior Cleaning
+- Tagline: Clean starts here.
+- Primary palette: deep navy + cyan
