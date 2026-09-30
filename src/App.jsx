@@ -309,13 +309,13 @@ function MobileBar() {
   );
 }
 
-function SectionIntro({ eyebrow, title, text, align = "center" }) {
+function SectionIntro({ eyebrow, title, text, align = "center", light = false }) {
   const centered = align === "center";
   return (
     <div className={centered ? "mx-auto max-w-3xl text-center" : "max-w-2xl"}>
-      <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-700">{eyebrow}</p>
-      <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-5xl">{title}</h2>
-      {text && <p className="mt-5 text-base leading-8 text-slate-600 md:text-lg">{text}</p>}
+      <p className={`text-xs font-black uppercase tracking-[0.24em] ${light ? "text-cyan-300" : "text-cyan-700"}`}>{eyebrow}</p>
+      <h2 className={`mt-3 text-3xl font-black tracking-tight md:text-5xl ${light ? "text-white" : "text-slate-950"}`}>{title}</h2>
+      {text && <p className={`mt-5 text-base leading-8 md:text-lg ${light ? "text-slate-300" : "text-slate-600"}`}>{text}</p>}
     </div>
   );
 }
@@ -475,7 +475,7 @@ function HomePage() {
             <BeforeAfter priority />
             <div className="border-x border-b border-slate-200 bg-white px-5 py-4 text-slate-900">
               <p className="text-sm font-black">Actual project result</p>
-              <p className="mt-1 text-sm text-slate-500">Concrete sidewalk cleaning in Allen, TX.</p>
+              <p className="mt-1 text-sm text-slate-500">Concrete sidewalk cleaning.</p>
             </div>
           </div>
         </div>
@@ -557,7 +557,7 @@ function HomePage() {
 
       <section className="bg-slate-950 px-5 py-20 text-white lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <SectionIntro eyebrow="Starting packages" title="Enough pricing to know what to expect." text="Every property is different, but a useful starting point is better than making customers guess." />
+          <SectionIntro eyebrow="Starting packages" title="Enough pricing to know what to expect." text="Every property is different, but a useful starting point is better than making customers guess." light />
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {packages.map((pkg) => (
               <div key={pkg.name} className={pkg.featured ? "border border-cyan-400 bg-white p-7 text-slate-950" : "border border-white/15 bg-white/5 p-7"}>
@@ -679,7 +679,7 @@ function ResultsPage() {
             <BeforeAfter priority />
             <div className="border-x border-b border-slate-200 bg-white p-5">
               <p className="font-black text-slate-950">Concrete sidewalk cleaning</p>
-              <p className="mt-1 text-sm text-slate-500">Allen, Texas</p>
+              <p className="mt-1 text-sm text-slate-500">Before-and-after surface cleaning</p>
             </div>
           </div>
           <div>
@@ -740,12 +740,12 @@ function AboutPage() {
       <section className="bg-slate-950 px-5 py-20 text-white lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[.8fr_1.2fr]">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">What RinsePoint is not</p>
-            <h2 className="mt-4 text-3xl font-black md:text-4xl">No fake history. No stock-photo success story.</h2>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-300">How we build trust</p>
+            <h2 className="mt-4 text-3xl font-black md:text-4xl">Real work first. Claims second.</h2>
           </div>
           <div className="text-lg leading-8 text-slate-300">
             <p>
-              RinsePoint is a growing local business. The website is intentionally built around services we are actually ready to perform, real project photography, and clear starting prices.
+              RinsePoint is a growing local business. The website is built around services we are actually ready to perform, real project photography, and clear starting prices.
             </p>
             <p className="mt-5">
               As the company adds equipment, services, completed projects, and customer reviews, the site will expand with real proof instead of pretending those things already exist.
