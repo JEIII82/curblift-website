@@ -1,0 +1,62 @@
+name: Temporary image optimizer
+
+on:
+  push:
+    branches:
+      - optimize-project-images
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: optimize-project-images
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Create optimized WebP images
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          for stem in ("before-sidewalk", "after-sidewalk"):
+              src = Path("public/images") / f"{stem}.jpg"
+              out = Path("public/images") / f"{stem}.webp"
+              with Image.open(src) as im:
+                  print(stem, "original_dimensions=", im.size, "original_bytes=", src.stat().st_size)
+                  im = im.convert("RGB")
+                  # Keep enough resolution for the hero while avoiding oversized uploads.
+                  max_width = 1400
+                  if im.width > max_width:
+                      height = round(im.height * max_width / im.width)
+                      im = im.resize((max_width, height), Image.Resampling.LANCZOS)
+                  im.save(out, "WEBP", quality=82, method=6)
+                  print(stem, "webp_dimensions=", im.size, "webp_bytes=", out.stat().st_size)
+          PY
+
+      - name: Commit optimized images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/images/*.webp
+          if git diff --cached --quiet; then
+            echo "No image changes"
+            exit 0
+          fi
+          git commit -m "Add optimized WebP project images"
+          git push
