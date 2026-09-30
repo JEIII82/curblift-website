@@ -9,7 +9,6 @@ import {
   Star,
   MapPin,
   Sparkles,
-  Home,
   Building2,
   Trees,
   ClipboardCheck,
@@ -25,11 +24,11 @@ import {
 } from "lucide-react";
 
 const business = {
-  name: "CurbLift Exterior Cleaning",
-  shortName: "CurbLift",
-  tagline: "We lift the dirt. You enjoy the difference.",
+  name: "RinsePoint Exterior Cleaning",
+  shortName: "RinsePoint",
+  tagline: "Clean starts here.",
   location: "Allen, TX",
-  serviceLine: "Pressure Washing • Soft Washing • Surface Cleaning",
+  serviceLine: "Pressure Washing • Concrete Cleaning • Surface Cleaning",
   phone: "(972) 672-0212",
   smsLink: "sms:+19726720212",
   phoneLink: "tel:+19726720212",
@@ -43,24 +42,24 @@ const beforeAfter = {
 
 const services = [
   {
-    icon: Home,
-    title: "House Washing",
-    text: "Low-pressure soft washing for siding, brick, gutters, trim, and exterior surfaces so your home looks fresh without unnecessary damage.",
-  },
-  {
     icon: Droplets,
     title: "Driveway & Concrete Cleaning",
-    text: "Remove built-up dirt, mildew, algae, tire marks, and stains from driveways, sidewalks, walkways, and entryways.",
+    text: "Remove built-up dirt, grime, algae, tire marks, and surface buildup from driveways and other concrete areas.",
+  },
+  {
+    icon: Sparkles,
+    title: "Sidewalk & Walkway Cleaning",
+    text: "Refresh sidewalks, front walkways, entry paths, and other high-traffic concrete surfaces for a cleaner first impression.",
   },
   {
     icon: Trees,
-    title: "Deck, Fence & Patio Cleaning",
-    text: "Refresh outdoor living spaces with careful cleaning for wood, composite, stone, concrete, and backyard surfaces.",
+    title: "Patio & Outdoor Surface Cleaning",
+    text: "Clean patios and outdoor hard surfaces with a careful approach matched to the material and condition.",
   },
   {
     icon: Building2,
-    title: "Commercial Exterior Cleaning",
-    text: "Keep storefronts, entryways, sidewalks, dumpster pads, and exterior business areas looking clean and professional.",
+    title: "Commercial Concrete Cleaning",
+    text: "Keep storefront sidewalks, entryways, concrete pads, and exterior business areas looking clean and professional.",
   },
 ];
 
@@ -79,11 +78,6 @@ const pricing = [
     service: "Patio Cleaning",
     price: "$89",
     note: "For backyard patios, sitting areas, and smaller outdoor concrete spaces.",
-  },
-  {
-    service: "House Washing",
-    price: "$199",
-    note: "Starting price for exterior soft washing. Final quote depends on size, stories, and buildup.",
   },
 ];
 
@@ -123,8 +117,8 @@ const serviceAreas = [
 
 const faqs = [
   {
-    q: "Do you use high pressure on houses?",
-    a: "No. For most home exteriors, soft washing is the safer method. It uses the right cleaning mix and lower pressure instead of blasting delicate surfaces.",
+    q: "What surfaces do you clean?",
+    a: "RinsePoint currently focuses on driveways, sidewalks, walkways, patios, and other exterior concrete or hard-surface cleaning. Contact us about a specific surface and we can confirm whether it fits our current services.",
   },
   {
     q: "Can I get a quote from photos?",
@@ -136,11 +130,11 @@ const faqs = [
   },
   {
     q: "Are you insured?",
-    a: "CurbLift is not advertising full insurance coverage yet, but we are working toward a professional business setup. Contact us for current service availability, job details, and booking information before scheduling.",
+    a: "RinsePoint is not advertising full insurance coverage yet, but we are working toward a professional business setup. Contact us for current service availability, job details, and booking information before scheduling.",
   },
   {
     q: "What areas do you serve?",
-    a: "CurbLift is based near Allen, Texas and serves nearby North Texas cities including McKinney, Plano, Frisco, Fairview, Lucas, Murphy, Wylie, and more.",
+    a: "RinsePoint is based near Allen, Texas and serves nearby North Texas cities including McKinney, Plano, Frisco, Fairview, Lucas, Murphy, Wylie, and more.",
   },
 ];
 
@@ -159,7 +153,7 @@ function Logo() {
       <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white shadow-lg shadow-cyan-500/25">
         <Droplets className="h-7 w-7" />
         <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-cyan-600">
-          CL
+          RP
         </span>
       </div>
       <div>
@@ -279,7 +273,7 @@ function QuoteForm() {
             Quote request sent!
           </h3>
           <p className="mt-4 max-w-md leading-7 text-slate-600">
-            Thanks for reaching out to CurbLift. We received your request and
+            Thanks for reaching out to RinsePoint. We received your request and
             will follow up as soon as possible.
           </p>
           <a
@@ -295,8 +289,8 @@ function QuoteForm() {
 
   return (
     <form className="bg-white p-8 md:p-12" onSubmit={handleSubmit}>
-      <input type="hidden" name="_subject" value="New CurbLift Quote Request" />
-      <input type="hidden" name="business" value="CurbLift Exterior Cleaning" />
+      <input type="hidden" name="_subject" value="New RinsePoint Quote Request" />
+      <input type="hidden" name="business" value="RinsePoint Exterior Cleaning" />
 
       <div className="grid gap-4">
         <div>
@@ -381,8 +375,7 @@ function QuoteForm() {
             >
               <option value="">Choose a service</option>
               <option>Driveway / concrete cleaning</option>
-              <option>House washing</option>
-              <option>Fence / deck / patio cleaning</option>
+              <option>Patio / outdoor surface cleaning</option>
               <option>Commercial pressure washing</option>
               <option>Not sure yet</option>
             </select>
@@ -597,7 +590,7 @@ export default function PowerWashingWebsite() {
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <p className="mb-3 text-sm font-black uppercase tracking-[0.22em] text-cyan-600">
-                About CurbLift
+                About RinsePoint
               </p>
               <h2 className="text-4xl font-black tracking-tight text-slate-950 md:text-5xl">
                 A locally owned exterior cleaning service built on clear
@@ -606,10 +599,10 @@ export default function PowerWashingWebsite() {
             </div>
             <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-7 shadow-sm">
               <p className="text-lg leading-8 text-slate-700">
-                CurbLift Exterior Cleaning is a locally owned exterior cleaning
-                service based near Allen, Texas. We help homeowners and small
-                businesses improve curb appeal with driveway cleaning, sidewalk
-                cleaning, patio cleaning, house washing, and surface cleaning.
+                RinsePoint is a locally owned exterior cleaning service based
+                near Allen, Texas. We help homeowners and small businesses
+                improve curb appeal with driveway cleaning, sidewalk and
+                walkway cleaning, patio cleaning, and exterior surface cleaning.
               </p>
               <p className="mt-5 text-lg leading-8 text-slate-700">
                 Our goal is simple: clear communication, dependable scheduling,
@@ -635,7 +628,7 @@ export default function PowerWashingWebsite() {
           <SectionHeader
             eyebrow="Services"
             title="Exterior cleaning services built for curb appeal."
-            text="Whether it is concrete, siding, patios, fences, or business entryways, CurbLift focuses on results customers can see right away."
+            text="From driveways and sidewalks to patios and business entryways, RinsePoint focuses on exterior cleaning results customers can see right away."
           />
           <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
             {services.map((service) => {
@@ -664,7 +657,7 @@ export default function PowerWashingWebsite() {
             title="Simple starting prices for common cleaning jobs."
             text="Every property is different, so final pricing depends on size, surface condition, stains, access, and the amount of buildup. These starting prices give customers a clear idea before requesting a quote."
           />
-          <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
             {pricing.map((item) => (
               <div
                 key={item.service}
@@ -692,7 +685,7 @@ export default function PowerWashingWebsite() {
             <Info className="mt-1 h-6 w-6 shrink-0 text-cyan-700" />
             <p className="leading-7">
               Final quotes may be higher for large areas, heavy staining, oil
-              spots, algae buildup, multi-story homes, or jobs requiring extra
+              spots, algae buildup, unusual access, or jobs requiring extra
               prep. Texting photos is the fastest way to get an accurate quote.
             </p>
           </div>
@@ -737,7 +730,7 @@ export default function PowerWashingWebsite() {
           <SectionHeader
             eyebrow="Early Results"
             title="Real results are the best proof."
-            text="CurbLift is just getting started, so this section will grow with more real project photos and customer feedback over time."
+            text="RinsePoint is just getting started, so this section will grow with more real project photos and customer feedback over time."
           />
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <BeforeAfterCard />
@@ -841,7 +834,7 @@ export default function PowerWashingWebsite() {
                 Free Quote
               </p>
               <h2 className="text-4xl font-black tracking-tight md:text-5xl">
-                Ready to lift the dirt?
+                Ready for a cleaner exterior?
               </h2>
               <p className="mt-5 text-lg leading-8 text-slate-300">
                 Fill out the form, call, or text to request an estimate. For the
