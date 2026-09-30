@@ -130,7 +130,7 @@ const faqs = [
   },
   {
     q: "Are you insured?",
-    a: "RinsePoint is not advertising full insurance coverage yet, but we are working toward a professional business setup. Contact us for current service availability, job details, and booking information before scheduling.",
+    a: "Insurance coverage is currently being finalized. Contact us before booking if you need current coverage details for your property or project.",
   },
   {
     q: "What areas do you serve?",
@@ -149,18 +149,22 @@ const earlyResults = [
 
 function Logo() {
   return (
-    <a href="#home" className="flex items-center gap-3">
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white shadow-lg shadow-cyan-500/25">
-        <Droplets className="h-7 w-7" />
-        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-cyan-600">
-          RP
-        </span>
-      </div>
+    <a
+      href="#home"
+      aria-label="RinsePoint home"
+      className="flex items-center gap-3"
+    >
+      <img
+        src="/rinsepoint-mark.svg"
+        alt=""
+        aria-hidden="true"
+        className="h-12 w-12 drop-shadow-sm"
+      />
       <div>
-        <p className="text-lg font-black leading-5 tracking-tight text-slate-950">
+        <p className="text-xl font-black leading-5 tracking-tight text-slate-950">
           {business.shortName}
         </p>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-600">
+        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.19em] text-cyan-600">
           Exterior Cleaning
         </p>
       </div>
@@ -300,6 +304,7 @@ function QuoteForm() {
           <input
             className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
             name="name"
+            autoComplete="name"
             placeholder="Your name"
             required
           />
@@ -319,6 +324,7 @@ function QuoteForm() {
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="phone"
               type="tel"
+              autoComplete="tel"
               placeholder="Phone number"
               required
             />
@@ -336,6 +342,7 @@ function QuoteForm() {
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="email"
               type="email"
+              autoComplete="email"
               placeholder="Email address"
               required
             />
@@ -355,6 +362,7 @@ function QuoteForm() {
             <input
               className="w-full rounded-2xl border border-slate-200 px-4 py-4 outline-none focus:border-cyan-500"
               name="city"
+              autoComplete="address-level2"
               placeholder="Allen, McKinney, Plano..."
               required
             />
@@ -465,6 +473,10 @@ export default function PowerWashingWebsite() {
           </div>
 
           <button
+            type="button"
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
             onClick={() => setOpen(!open)}
             className="rounded-xl border border-slate-200 p-3 lg:hidden"
           >
@@ -473,7 +485,10 @@ export default function PowerWashingWebsite() {
         </div>
 
         {open && (
-          <div className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden">
+          <div
+            id="mobile-navigation"
+            className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden"
+          >
             <div className="flex flex-col gap-3">
               {nav.map((item) => (
                 <a
@@ -701,8 +716,8 @@ export default function PowerWashingWebsite() {
                 Simple. Fast. Professional.
               </h2>
               <p className="mt-5 max-w-xl text-lg leading-8 text-slate-300">
-                A clear process builds trust before customers ever call. This
-                makes booking feel easy and low-risk.
+                From the first photo quote to the final rinse, you will know
+                what happens next and what is included in the job.
               </p>
             </div>
             <div className="grid gap-4">
@@ -730,7 +745,7 @@ export default function PowerWashingWebsite() {
           <SectionHeader
             eyebrow="Early Results"
             title="Real results are the best proof."
-            text="RinsePoint is just getting started, so this section will grow with more real project photos and customer feedback over time."
+            text="We document real project results so you can see the difference before requesting a quote."
           />
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <BeforeAfterCard />
@@ -761,7 +776,7 @@ export default function PowerWashingWebsite() {
                 "Cleaner sidewalks and walkways",
                 "Brighter concrete and entryways",
                 "Better first impression before guests arrive",
-                "Great photo proof for future customers",
+                "A cleaner, brighter first impression",
               ].map((item) => (
                 <div
                   key={item}
@@ -785,9 +800,9 @@ export default function PowerWashingWebsite() {
                 Proudly serving Allen and nearby North Texas communities.
               </h2>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Local service area pages can help later with Google searches
-                like “pressure washing in Allen TX” and “driveway cleaning near
-                me.”
+                Request a photo quote from Allen or a nearby community. We keep
+                the service area focused so scheduling stays dependable and
+                travel does not inflate the cost of smaller jobs.
               </p>
               <div className="mt-8 flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-5">
                 <MapPin className="h-7 w-7 text-cyan-600" />
