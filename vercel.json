@@ -1,0 +1,38 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.rinsepoint.com"
+        }
+      ],
+      "destination": "https://rinsepoint.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "curbliftcleaning.com"
+        }
+      ],
+      "destination": "https://rinsepoint.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.curbliftcleaning.com"
+        }
+      ],
+      "destination": "https://rinsepoint.com/:path*",
+      "permanent": true
+    }
+  ]
+}
