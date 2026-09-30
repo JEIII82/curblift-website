@@ -35,3 +35,8 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Lighthouse production audit
+        run: |
+          npx --yes lighthouse https://rinsepoint.com/ --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lighthouse.json --quiet
+          node --input-type=commonjs -e "const r=require('./lighthouse.json'); const c=r.categories; const a=r.audits; console.log('PERFORMANCE',Math.round(c.performance.score*100)); console.log('ACCESSIBILITY',Math.round(c.accessibility.score*100)); console.log('BEST_PRACTICES',Math.round(c['best-practices'].score*100)); console.log('SEO',Math.round(c.seo.score*100)); console.log('LCP',a['largest-contentful-paint'].displayValue); console.log('TBT',a['total-blocking-time'].displayValue); console.log('CLS',a['cumulative-layout-shift'].displayValue); console.log('FCP',a['first-contentful-paint'].displayValue);"
