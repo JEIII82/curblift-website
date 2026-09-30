@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">RinsePoint</title>
+  <defs>
+    <linearGradient id="rp" x1="18" y1="12" x2="108" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="60" fill="#061224"/>
+  <path d="M64 18c-24.3 0-44 19.3-44 43.2 0 30.2 44 54.8 44 54.8s44-24.6 44-54.8C108 37.3 88.3 18 64 18Z" fill="url(#rp)"/>
+  <circle cx="64" cy="59" r="18" fill="#061224"/>
+  <path d="M38 79c12 9 40 9 52-4" fill="none" stroke="#e6fbff" stroke-width="7" stroke-linecap="round" opacity=".92"/>
+</svg>
