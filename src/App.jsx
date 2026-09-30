@@ -60,19 +60,19 @@ const services = [
 
 const pricing = [
   {
-    service: "Sidewalk Cleaning",
-    price: "$49",
-    note: "Great for front walkways, entry paths, and smaller concrete areas.",
-  },
-  {
     service: "Driveway Cleaning",
-    price: "$99",
-    note: "Starting price for standard residential driveways. Larger or heavily stained concrete may be higher.",
+    price: "$149",
+    note: "A simple starting point for a standard residential driveway with typical buildup.",
   },
   {
-    service: "Patio Cleaning",
-    price: "$89",
-    note: "For backyard patios, sitting areas, and smaller outdoor concrete spaces.",
+    service: "Driveway + Front Walkway",
+    price: "$199",
+    note: "A popular curb-appeal package for the driveway, front walk, and entry approach.",
+  },
+  {
+    service: "Full Exterior Concrete",
+    price: "$299",
+    note: "Starting price for a larger bundle such as driveway, walkways, and a typical patio or porch area.",
   },
 ];
 
@@ -126,6 +126,22 @@ const faqs = [
   {
     q: "What should I do before service?",
     a: "Please make sure the cleaning area is accessible and that an outdoor water source is available. Moving vehicles, small furniture, and fragile items beforehand helps the job go faster.",
+  },
+  {
+    q: "Can pressure washing damage concrete?",
+    a: "It can when the wrong pressure, nozzle, distance, or technique is used. RinsePoint uses a surface-appropriate approach and avoids treating every surface with maximum pressure.",
+  },
+  {
+    q: "Can you remove oil, rust, or deep stains?",
+    a: "Many stains can be improved substantially, but deeply absorbed oil, rust, paint, or older discoloration may not disappear completely. We set expectations before starting when a stain looks permanent or may need specialty treatment.",
+  },
+  {
+    q: "Do you need access to water?",
+    a: "Yes. Most residential jobs require access to a working outdoor water spigot with adequate flow. If you are unsure whether your setup will work, send a photo when requesting a quote.",
+  },
+  {
+    q: "How long does a typical job take?",
+    a: "Timing depends on the size, buildup, stains, access, and how much rinsing is needed. Most residential concrete-cleaning jobs can be completed in a single visit, and we confirm the expected scope before scheduling.",
   },
   {
     q: "What areas do you serve?",
@@ -543,7 +559,7 @@ export default function PowerWashingWebsite() {
               </div>
               <div className="mt-8 grid gap-4 text-sm font-bold text-slate-200 sm:grid-cols-3">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-cyan-300" /> Locally owned
+                  <MapPin className="h-5 w-5 text-cyan-300" /> Owner-operated
                 </div>
                 <div className="flex items-center gap-2">
                   <Camera className="h-5 w-5 text-cyan-300" /> Fast photo quotes
@@ -666,9 +682,9 @@ export default function PowerWashingWebsite() {
 
         <section id="pricing" className="px-5 py-20 lg:px-8">
           <SectionHeader
-            eyebrow="Starting Prices"
-            title="Simple starting prices for common cleaning jobs."
-            text="Every property is different, so final pricing depends on size, surface condition, stains, access, and the amount of buildup. These starting prices give customers a clear idea before requesting a quote."
+            eyebrow="Popular Starting Packages"
+            title="Clear starting prices without the guesswork."
+            text="These are starting prices for common residential concrete-cleaning jobs. Final pricing depends on size, surface condition, stains, access, and the amount of buildup."
           />
           <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
             {pricing.map((item) => (
@@ -697,9 +713,10 @@ export default function PowerWashingWebsite() {
           <div className="mx-auto mt-8 flex max-w-4xl gap-3 rounded-3xl border border-cyan-200 bg-cyan-50 p-5 text-slate-700">
             <Info className="mt-1 h-6 w-6 shrink-0 text-cyan-700" />
             <p className="leading-7">
-              Final quotes may be higher for large areas, heavy staining, oil
-              spots, algae buildup, unusual access, or jobs requiring extra
-              prep. Texting photos is the fastest way to get an accurate quote.
+              Final quotes may be higher for larger areas, heavy staining, oil
+              spots, specialty stain treatment, unusual access, or jobs requiring
+              extra prep. Texting a few clear photos is the fastest way to get an
+              accurate price before scheduling.
             </p>
           </div>
         </section>
