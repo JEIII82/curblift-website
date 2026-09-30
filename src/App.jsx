@@ -145,21 +145,12 @@ const beforeAfter = {
 
 function Logo() {
   return (
-    <a href="/" aria-label="RinsePoint home" className="flex items-center gap-3">
+    <a href="/" aria-label="RinsePoint Exterior Cleaning home" className="block shrink-0">
       <img
-        src="/rinsepoint-mark.svg"
-        alt=""
-        aria-hidden="true"
-        className="h-11 w-11"
+        src="/rinsepoint-logo.svg"
+        alt="RinsePoint Exterior Cleaning"
+        className="h-auto w-[168px] sm:w-[192px]"
       />
-      <div>
-        <div className="text-xl font-black leading-none tracking-tight text-slate-950">
-          RinsePoint
-        </div>
-        <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-700">
-          Exterior Cleaning
-        </div>
-      </div>
     </a>
   );
 }
@@ -254,8 +245,15 @@ function Footer() {
     <footer className="border-t border-slate-200 bg-slate-950 text-slate-300">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 md:grid-cols-[1.3fr_1fr_1fr] lg:px-8">
         <div>
-          <div className="text-2xl font-black text-white">RinsePoint</div>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-slate-400">
+          <a href="/" aria-label="RinsePoint home" className="inline-block">
+            <img
+              src="/rinsepoint-logo-white.svg"
+              alt="RinsePoint Exterior Cleaning"
+              className="h-auto w-[220px]"
+              loading="lazy"
+            />
+          </a>
+          <p className="mt-4 max-w-sm text-sm leading-6 text-slate-400">
             Owner-operated pressure washing and exterior concrete cleaning in Allen, Texas and nearby North Texas communities.
           </p>
           <p className="mt-5 text-sm font-bold text-cyan-300">{business.tagline}</p>
