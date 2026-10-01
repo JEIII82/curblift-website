@@ -98,8 +98,8 @@ function JobList({ session, onOpen }) {
                 <p className="mt-1 text-xs text-slate-500">{job.property ? `${job.property.address_line1}, ${job.property.city}` : "Address pending"}</p>
               </td>
               <td className="px-5 py-4">
-                <p className="font-bold text-slate-800">{job.customer?.display_name || "—"}</p>
-                <p className="mt-1 text-xs text-slate-500">{job.customer?.phone || job.customer?.email || "—"}</p>
+                <p className="font-bold text-slate-800">{job.lead?.submitted_name || job.customer?.display_name || "—"}</p>
+                <p className="mt-1 text-xs text-slate-500">{job.lead?.submitted_phone || job.lead?.submitted_email || job.customer?.phone || job.customer?.email || "—"}</p>
               </td>
               <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-black ${badgeClass(job.status)}`}>{label(job.status)}</span></td>
               <td className="px-5 py-4 text-slate-600">{job.scheduled_start ? formatDate(job.scheduled_start, true) : "Not scheduled"}</td>
@@ -218,7 +218,7 @@ function JobDetail({ session, jobId, onBack }) {
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Customer</p>
-                <p className="mt-2 font-black text-slate-900">{job.customer?.display_name}</p>
+                <p className="mt-2 font-black text-slate-900">{job.lead?.submitted_name || job.customer?.display_name}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {job.customer?.phone && <a href={`tel:${job.customer.phone}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700"><Phone className="h-4 w-4" /> Call</a>}
                 </div>
