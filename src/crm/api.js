@@ -168,7 +168,7 @@ export function getCustomers(session) {
 }
 
 export function getQuotes(session) {
-  return rest(session, `quotes?select=id,quote_number,status,title,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,sent_at,viewed_at,approved_at,public_token,created_at,customer:customers(id,display_name,email,phone),lead:leads(id,submitted_name,submitted_email,submitted_phone,requested_service),property:properties(id,address_line1,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `quotes?select=id,quote_number,status,title,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,sent_at,viewed_at,approved_at,public_token,created_at,customer:customers(id,display_name,email,phone),lead:leads(id,submitted_name,submitted_email,submitted_phone,requested_service),jobs(id,job_number,status),property:properties(id,address_line1,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getQuoteDetails(session, quoteId) {
