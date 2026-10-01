@@ -379,8 +379,52 @@ function QuoteForm() {
   const requestedPackage = new URLSearchParams(window.location.search).get("package");
   const selectedPackage = packages.find((pkg) => pkg.name === requestedPackage);
   const successHeading = useRef(null);
+  const submittedLead = useRef(null);
+  const mirroredLead = useRef(false);
+
+  const submitQuote = (event) => {
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    submittedLead.current = {
+      name: data.name || "",
+      phone: data.phone || "",
+      email: data.email || "",
+      city: data.city || "",
+      service: data.service || "",
+      message: data.message || "",
+      package: data.package || "",
+      leadSource: "Website",
+      pageUrl: window.location.href,
+      referrer: document.referrer || "",
+    };
+    mirroredLead.current = false;
+
+    return handleSubmit(event);
+  };
+
   useEffect(() => {
-    if (state.succeeded) successHeading.current?.focus();
+    if (!state.succeeded) return;
+
+    successHeading.current?.focus();
+
+    if (submittedLead.current && !mirroredLead.current) {
+      mirroredLead.current = true;
+
+      const payload = new URLSearchParams({
+        ...submittedLead.current,
+        submittedAt: new Date().toISOString(),
+      });
+
+      fetch("https://hook.us2.make.com/9n2xnd9g8xutjgj2qgvsg36g1ehg1a5h", {
+        method: "POST",
+        mode: "no-cors",
+        body: payload,
+        keepalive: true,
+      }).catch(() => {
+        // Formspree remains the source of truth if the automation is unavailable.
+      });
+    }
   }, [state.succeeded]);
 
   if (state.succeeded) {
@@ -399,7 +443,7 @@ function QuoteForm() {
   }
 
   return (
-    <form id="quote-form" className="scroll-mt-28 border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={handleSubmit} aria-busy={state.submitting}>
+    <form id="quote-form" className="scroll-mt-28 border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={submitQuote} aria-busy={state.submitting}>
       <input type="hidden" name="_subject" value="New RinsePoint Quote Request" />
       <input type="hidden" name="business" value="RinsePoint Exterior Cleaning" />
       <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
