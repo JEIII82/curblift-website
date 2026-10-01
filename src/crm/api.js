@@ -149,14 +149,53 @@ export async function updateLeadStatus(session, leadId, status) {
 
 export async function getDashboard(session) {
   const org = `organization_id=eq.${ORGANIZATION_ID}`;
-  const [newLeads, openQuotes, scheduledJobs, unpaidInvoices, recentLeads] = await Promise.all([
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [
+    newLeads,
+    openQuotes,
+    activeJobs,
+    unpaidInvoices,
+    unscheduledJobs,
+    draftInvoices,
+    overdueInvoices,
+    recentLeads,
+    todayAppointments,
+    actionQuotes,
+    actionJobs,
+    actionInvoices,
+  ] = await Promise.all([
     countRows(session, "leads", `${org}&status=eq.new`),
     countRows(session, "quotes", `${org}&status=in.(sent,viewed,changes_requested)`),
     countRows(session, "jobs", `${org}&status=in.(scheduled,on_my_way,in_progress)`),
     countRows(session, "invoices", `${org}&status=in.(sent,partially_paid,overdue)`),
+    countRows(session, "jobs", `${org}&status=eq.unscheduled`),
+    countRows(session, "invoices", `${org}&status=eq.draft`),
+    countRows(session, "invoices", `${org}&status=eq.overdue`),
     rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
+    rest(session, `appointments?select=id,status,starts_at,ends_at,customer:customers(id,display_name),property:properties(address_line1,city,state),job:jobs(id,job_number,title,status)&${org}&starts_at=gte.${encodeURIComponent(today.toISOString())}&starts_at=lt.${encodeURIComponent(tomorrow.toISOString())}&order=starts_at.asc`, { method: "GET" }),
+    rest(session, `quotes?select=id,quote_number,status,title,total,sent_at,viewed_at,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(sent,viewed,changes_requested)&order=updated_at.asc&limit=5`, { method: "GET" }),
+    rest(session, `jobs?select=id,job_number,status,title,scheduled_start,quoted_total,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(unscheduled,scheduled,on_my_way,in_progress)&order=scheduled_start.asc.nullslast,created_at.asc&limit=6`, { method: "GET" }),
+    rest(session, `invoices?select=id,invoice_number,status,total,amount_due,due_at,customer:customers(id,display_name),job:jobs(id,job_number,title,lead:leads(id,submitted_name))&${org}&status=in.(draft,sent,partially_paid,overdue)&order=due_at.asc.nullslast,created_at.asc&limit=6`, { method: "GET" }),
   ]);
-  return { newLeads, openQuotes, scheduledJobs, unpaidInvoices, recentLeads };
+
+  return {
+    newLeads,
+    openQuotes,
+    activeJobs,
+    unpaidInvoices,
+    unscheduledJobs,
+    draftInvoices,
+    overdueInvoices,
+    recentLeads,
+    todayAppointments,
+    actionQuotes,
+    actionJobs,
+    actionInvoices,
+  };
 }
 
 export function getLeads(session) {
