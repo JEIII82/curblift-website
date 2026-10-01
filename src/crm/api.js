@@ -154,7 +154,7 @@ export async function getDashboard(session) {
     countRows(session, "quotes", `${org}&status=in.(sent,viewed,changes_requested)`),
     countRows(session, "jobs", `${org}&status=in.(scheduled,on_my_way,in_progress)`),
     countRows(session, "invoices", `${org}&status=in.(sent,partially_paid,overdue)`),
-    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
+    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
   ]);
   return { newLeads, openQuotes, scheduledJobs, unpaidInvoices, recentLeads };
 }
@@ -165,6 +165,33 @@ export function getLeads(session) {
 
 export function getCustomers(session) {
   return rest(session, `customers?select=id,display_name,email,phone,lead_source,created_at&organization_id=eq.${ORGANIZATION_ID}&archived_at=is.null&order=created_at.desc&limit=200`, { method: "GET" });
+}
+
+export async function getCustomerWorkspace(session, customerId) {
+  const id = encodeURIComponent(customerId);
+  const org = `organization_id=eq.${ORGANIZATION_ID}`;
+
+  const [customerRows, properties, leads, quotes, jobs, invoices, payments, activity] = await Promise.all([
+    rest(session, `customers?select=id,display_name,first_name,last_name,company_name,email,phone,preferred_contact,tags,notes,lead_source,marketing_opt_in,sms_consent_at,sms_opt_out_at,sms_consent_source,created_at,updated_at&${org}&id=eq.${id}&limit=1`, { method: "GET" }),
+    rest(session, `properties?select=id,label,address_line1,address_line2,city,state,postal_code,is_primary,created_at&${org}&customer_id=eq.${id}&archived_at=is.null&order=is_primary.desc,created_at.desc`, { method: "GET" }),
+    rest(session, `leads?select=id,status,requested_service,requested_package,project_details,service_city,service_state,submitted_name,submitted_email,submitted_phone,created_at,closed_at,property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `quotes?select=id,quote_number,status,title,total,created_at,sent_at,approved_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code),jobs(id,job_number,status)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `jobs?select=id,job_number,status,title,quoted_total,final_total,scheduled_start,completed_at,created_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,sent_at,paid_at,created_at,job:jobs(id,job_number,title,lead:leads(id,submitted_name,requested_service))&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `payments?select=id,invoice_id,amount,status,method,provider,paid_at,created_at&${org}&customer_id=eq.${id}&order=paid_at.desc.nullslast,created_at.desc`, { method: "GET" }),
+    rest(session, `activity_events?select=id,event_type,summary,entity_type,entity_id,created_at,metadata&${org}&customer_id=eq.${id}&order=created_at.desc&limit=100`, { method: "GET" }),
+  ]);
+
+  return {
+    customer: customerRows?.[0] || null,
+    properties,
+    leads,
+    quotes,
+    jobs,
+    invoices,
+    payments,
+    activity,
+  };
 }
 
 export function getQuotes(session) {
@@ -231,11 +258,11 @@ export function getAppointments(session) {
 }
 
 export function getInvoices(session) {
-  return rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code),job:jobs(id,job_number,title)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code),job:jobs(id,job_number,title,lead:leads(id,submitted_name,submitted_email,submitted_phone,requested_service))&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getInvoiceDetails(session, invoiceId) {
-  return rest(session, `invoices?select=id,invoice_number,status,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,notes,customer_id,property_id,job_id,quote_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),job:jobs(id,job_number,title),items:invoice_items(id,service_id,name,description,quantity,unit_price,line_total,sort_order),payments(id,amount,status,method,paid_at,notes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+  return rest(session, `invoices?select=id,invoice_number,status,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,notes,customer_id,property_id,job_id,quote_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),job:jobs(id,job_number,title,lead:leads(id,submitted_name,submitted_email,submitted_phone,requested_service)),items:invoice_items(id,service_id,name,description,quantity,unit_price,line_total,sort_order),payments(id,amount,status,method,paid_at,notes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
 }
 
 export async function invoiceAdmin(session, payload) {
