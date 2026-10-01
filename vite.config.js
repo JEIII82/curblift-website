@@ -17,6 +17,7 @@ export default defineConfig({
         about: resolve(__dirname, 'about/index.html'),
         areas: resolve(__dirname, 'areas/index.html'),
         contact: resolve(__dirname, 'contact/index.html'),
+        app: resolve(__dirname, 'app/index.html'),
       },
     },
   },
