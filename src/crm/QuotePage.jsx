@@ -63,7 +63,8 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
     customerMessage: "Thanks for the opportunity to quote your project. The scope and pricing below reflect the work discussed.",
     internalNotes: lead?.project_details || "",
     discountAmount: "",
-    taxAmount: "",
+    taxRate: "8.25",
+    taxExempt: false,
     expiresAt: dateInput(14),
     addressLine1: lead?.property?.address_line1 || "",
     addressLine2: lead?.property?.address_line2 || "",
@@ -106,7 +107,8 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
           customerMessage: quote.customer_message || "",
           internalNotes: quote.internal_notes || "",
           discountAmount: quote.discount_amount || "",
-          taxAmount: quote.tax_amount || "",
+          taxRate: String(quote.tax_rate ?? 8.25),
+          taxExempt: Boolean(quote.tax_exempt),
           expiresAt: quote.expires_at ? quote.expires_at.slice(0, 10) : dateInput(14),
           addressLine1: quote.property?.address_line1 || "",
           addressLine2: quote.property?.address_line2 || "",
@@ -134,7 +136,10 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
     if (item.optional && !item.selected) return sum;
     return sum + Number(item.quantity || 0) * Number(item.unitPrice || 0);
   }, 0), [form.items]);
-  const total = Math.max(subtotal - Number(form.discountAmount || 0) + Number(form.taxAmount || 0), 0);
+  const taxableBase = Math.max(subtotal - Number(form.discountAmount || 0), 0);
+  const taxRate = Math.max(Number(form.taxRate || 0), 0);
+  const taxAmount = form.taxExempt ? 0 : Math.round(taxableBase * taxRate) / 100;
+  const total = taxableBase + taxAmount;
 
   function patch(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -192,7 +197,8 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
         customerMessage: form.customerMessage,
         internalNotes: form.internalNotes,
         discountAmount: Number(form.discountAmount || 0),
-        taxAmount: Number(form.taxAmount || 0),
+        taxRate: Number(form.taxRate || 0),
+        taxExempt: Boolean(form.taxExempt),
         expiresAt: form.expiresAt ? new Date(form.expiresAt + "T23:59:59").toISOString() : null,
         items: form.items.map(({ serviceId, name, description, quantity, unitPrice, optional, selected }) => ({
           serviceId: serviceId || null,
@@ -336,7 +342,18 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
             <div className="mt-5 grid gap-3 text-sm">
               <div className="flex justify-between gap-4 text-slate-600"><span>Subtotal</span><strong className="text-slate-900">{money(subtotal)}</strong></div>
               <label className="flex items-center justify-between gap-4 text-slate-600"><span>Discount</span><input value={form.discountAmount} onChange={(e) => patch("discountAmount", e.target.value)} type="number" min="0" step="0.01" className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-right font-bold text-slate-900" /></label>
-              <label className="flex items-center justify-between gap-4 text-slate-600"><span>Tax / fees</span><input value={form.taxAmount} onChange={(e) => patch("taxAmount", e.target.value)} type="number" min="0" step="0.01" className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-right font-bold text-slate-900" /></label>
+              <div className="flex items-center justify-between gap-4 text-slate-600">
+                <span>Sales tax</span>
+                <div className="flex items-center gap-2">
+                  <input value={form.taxRate} onChange={(e) => patch("taxRate", e.target.value)} disabled={form.taxExempt} type="number" min="0" max="20" step="0.0001" className="w-20 rounded-lg border border-slate-300 px-3 py-2 text-right font-bold text-slate-900 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <span className="font-bold text-slate-500">%</span>
+                </div>
+              </div>
+              <div className="flex justify-between gap-4 text-slate-600"><span>Tax amount</span><strong className="text-slate-900">{money(taxAmount)}</strong></div>
+              <label className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-xs font-bold text-slate-600">
+                <input type="checkbox" checked={form.taxExempt} onChange={(e) => patch("taxExempt", e.target.checked)} className="mt-0.5" />
+                Tax exempt / do not charge sales tax
+              </label>
               <div className="mt-2 flex justify-between border-t border-slate-200 pt-4 text-lg"><span className="font-black text-slate-950">Total</span><strong className="text-2xl font-black text-slate-950">{money(total)}</strong></div>
             </div>
             <label className="mt-6 grid gap-2 text-sm font-extrabold text-slate-700">Valid through
