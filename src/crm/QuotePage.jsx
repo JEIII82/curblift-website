@@ -371,7 +371,7 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
   );
 }
 
-export default function QuotePage({ session, initialLead, onInitialLeadHandled }) {
+export default function QuotePage({ session, initialLead, initialQuoteId, onInitialLeadHandled, onInitialQuoteHandled, onOpenCustomer }) {
   const [quotes, setQuotes] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
@@ -401,6 +401,12 @@ export default function QuotePage({ session, initialLead, onInitialLeadHandled }
     onInitialLeadHandled?.();
   }, [initialLead, onInitialLeadHandled]);
 
+  useEffect(() => {
+    if (!initialQuoteId) return;
+    setBuilder({ lead: null, quoteId: initialQuoteId });
+    onInitialQuoteHandled?.();
+  }, [initialQuoteId, onInitialQuoteHandled]);
+
   if (builder) {
     return <QuoteBuilder session={session} customers={customers} services={services} lead={builder.lead} quoteId={builder.quoteId} onClose={() => setBuilder(null)} onSaved={load} />;
   }
@@ -423,9 +429,9 @@ export default function QuotePage({ session, initialLead, onInitialLeadHandled }
           <table className="min-w-[900px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Quote</th><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Total</th><th className="px-5 py-4">Expires</th><th className="px-5 py-4"></th></tr></thead>
             <tbody className="divide-y divide-slate-100">{quotes.map((quote) => (
-              <tr key={quote.id} className="hover:bg-slate-50/70">
+              <tr key={quote.id} role="button" tabIndex={0} onClick={() => setBuilder({ lead: null, quoteId: quote.id })} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setBuilder({ lead: null, quoteId: quote.id }); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none">
                 <td className="px-5 py-4"><p className="font-black text-slate-900">#{quote.quote_number}</p><p className="mt-1 text-xs text-slate-500">{quote.title || "Exterior Cleaning"}</p></td>
-                <td className="px-5 py-4"><p className="font-bold text-slate-800">{quote.lead?.submitted_name || quote.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{quote.property ? `${quote.property.address_line1}, ${quote.property.city}` : "Address pending"}</p></td>
+                <td className="px-5 py-4"><button type="button" onClick={(event) => { event.stopPropagation(); onOpenCustomer?.(quote.customer?.id); }} className="text-left hover:text-cyan-800"><p className="font-bold text-slate-800">{quote.lead?.submitted_name || quote.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{quote.property ? `${quote.property.address_line1}, ${quote.property.city}` : "Address pending"}</p></button></td>
                 <td className="px-5 py-4">
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{statusLabel(quote.status)}</span>
                   {quote.jobs?.[0] && (
@@ -436,7 +442,7 @@ export default function QuotePage({ session, initialLead, onInitialLeadHandled }
                 </td>
                 <td className="px-5 py-4 font-black text-slate-900">{money(quote.total)}</td>
                 <td className="px-5 py-4 text-slate-500">{quote.expires_at ? new Date(quote.expires_at).toLocaleDateString() : "—"}</td>
-                <td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => setBuilder({ lead: null, quoteId: quote.id })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open</button>{quote.public_token && quote.status !== "draft" && <button onClick={() => navigator.clipboard.writeText(publicLink(quote.public_token))} title="Copy customer link" className="rounded-lg border border-slate-300 p-2 text-slate-600"><Copy className="h-4 w-4" /></button>}</div></td>
+                <td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={(event) => { event.stopPropagation(); setBuilder({ lead: null, quoteId: quote.id }); }} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open</button>{quote.public_token && quote.status !== "draft" && <button onClick={(event) => { event.stopPropagation(); navigator.clipboard.writeText(publicLink(quote.public_token)); }} title="Copy customer link" className="rounded-lg border border-slate-300 p-2 text-slate-600"><Copy className="h-4 w-4" /></button>}</div></td>
               </tr>
             ))}</tbody>
           </table>
