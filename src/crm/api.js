@@ -165,11 +165,11 @@ export function getCustomers(session) {
 }
 
 export function getQuotes(session) {
-  return rest(session, `quotes?select=id,quote_number,status,title,subtotal,discount_amount,tax_amount,total,expires_at,sent_at,viewed_at,approved_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `quotes?select=id,quote_number,status,title,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,sent_at,viewed_at,approved_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getQuoteDetails(session, quoteId) {
-  return rest(session, `quotes?select=id,quote_number,status,title,customer_message,internal_notes,subtotal,discount_amount,tax_amount,total,expires_at,public_token,lead_id,customer_id,property_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),items:quote_items(id,service_id,name,description,quantity,unit_price,line_total,optional,selected,sort_order)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(quoteId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+  return rest(session, `quotes?select=id,quote_number,status,title,customer_message,internal_notes,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,public_token,lead_id,customer_id,property_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),items:quote_items(id,service_id,name,description,quantity,unit_price,line_total,optional,selected,sort_order)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(quoteId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
 }
 
 export function getCustomerProperties(session, customerId) {
@@ -232,7 +232,7 @@ export function getInvoices(session) {
 }
 
 export function getInvoiceDetails(session, invoiceId) {
-  return rest(session, `invoices?select=id,invoice_number,status,subtotal,discount_amount,tax_amount,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,notes,customer_id,property_id,job_id,quote_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),job:jobs(id,job_number,title),items:invoice_items(id,service_id,name,description,quantity,unit_price,line_total,sort_order),payments(id,amount,status,method,paid_at,notes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+  return rest(session, `invoices?select=id,invoice_number,status,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,notes,customer_id,property_id,job_id,quote_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),job:jobs(id,job_number,title),items:invoice_items(id,service_id,name,description,quantity,unit_price,line_total,sort_order),payments(id,amount,status,method,paid_at,notes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
 }
 
 export async function invoiceAdmin(session, payload) {
