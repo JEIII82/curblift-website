@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useForm, ValidationError } from "@formspree/react";
 import CrmApp from "./crm/CrmApp.jsx";
 import PublicQuotePage from "./quote/PublicQuotePage.jsx";
 import PublicInvoicePage from "./invoice/PublicInvoicePage.jsx";
+import {
+  buildLeadIntakePayload,
+  collectLeadAttribution,
+  submitLeadIntake,
+} from "./leadIntake.js";
 import {
   ArrowRight,
   Building2,
@@ -378,66 +382,59 @@ function PageHero({ eyebrow, title, text, children }) {
 }
 
 function QuoteForm() {
-  const [state, handleSubmit] = useForm("meedvvbl");
   const requestedPackage = new URLSearchParams(window.location.search).get("package");
   const selectedPackage = packages.find((pkg) => pkg.name === requestedPackage);
   const successHeading = useRef(null);
-  const submittedLead = useRef(null);
-  const mirroredLead = useRef(false);
+  const requestId = useRef(null);
+  const [submitState, setSubmitState] = useState({ status: "idle", error: "" });
+  const submitting = submitState.status === "submitting";
+  const succeeded = submitState.status === "succeeded";
 
-  const submitQuote = (event) => {
+  const submitQuote = async (event) => {
+    event.preventDefault();
+    if (submitting) return;
+
+    setSubmitState({ status: "submitting", error: "" });
+
+    if (!requestId.current) {
+      requestId.current = globalThis.crypto?.randomUUID?.() || `web-${Date.now()}`;
+    }
+
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const payload = buildLeadIntakePayload(formData, {
+      requestId: requestId.current,
+      submittedAt: new Date().toISOString(),
+      attribution: collectLeadAttribution({
+        href: window.location.href,
+        referrer: document.referrer || "",
+      }),
+    });
 
-    submittedLead.current = {
-      name: data.name || "",
-      phone: data.phone || "",
-      email: data.email || "",
-      city: data.city || "",
-      service: data.service || "",
-      message: data.message || "",
-      package: data.package || "",
-      leadSource: "Website",
-      pageUrl: window.location.href,
-      referrer: document.referrer || "",
-    };
-    mirroredLead.current = false;
-
-    return handleSubmit(event);
+    try {
+      await submitLeadIntake(payload);
+      setSubmitState({ status: "succeeded", error: "" });
+    } catch (error) {
+      setSubmitState({
+        status: "error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "We couldn't save your quote request. Please try again.",
+      });
+    }
   };
 
   useEffect(() => {
-    if (!state.succeeded) return;
+    if (succeeded) successHeading.current?.focus();
+  }, [succeeded]);
 
-    successHeading.current?.focus();
-
-    if (submittedLead.current && !mirroredLead.current) {
-      mirroredLead.current = true;
-
-      const payload = {
-        ...submittedLead.current,
-        submittedAt: new Date().toISOString(),
-        requestId: crypto.randomUUID(),
-      };
-
-      fetch("https://cfrdooivdzjuqsauhaqy.supabase.co/functions/v1/lead-intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {
-        // Formspree remains a fallback record if the CRM intake API is temporarily unavailable.
-      });
-    }
-  }, [state.succeeded]);
-
-  if (state.succeeded) {
+  if (succeeded) {
     return (
       <div className="border border-cyan-200 bg-cyan-50 p-8 md:p-10">
         <CheckCircle2 className="h-10 w-10 text-cyan-700" />
         <h2 ref={successHeading} tabIndex={-1} className="mt-5 text-3xl font-black text-slate-950">Quote request sent.</h2>
         <p className="mt-3 max-w-lg leading-7 text-slate-600">
-          Thanks for reaching out to RinsePoint. We received your request and will follow up as soon as possible.
+          Thanks for reaching out to RinsePoint. Your request is saved and we’ll follow up as soon as possible.
         </p>
         <a href={business.phoneLink} className="mt-6 inline-block font-black text-cyan-800">
           Need it faster? Call {business.phone}
@@ -447,64 +444,90 @@ function QuoteForm() {
   }
 
   return (
-    <form id="quote-form" className="scroll-mt-28 border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={submitQuote} aria-busy={state.submitting}>
-      <input type="hidden" name="_subject" value="New RinsePoint Quote Request" />
-      <input type="hidden" name="business" value="RinsePoint Exterior Cleaning" />
-      <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+    <form id="quote-form" className="scroll-mt-28 border border-slate-200 bg-white p-6 shadow-sm md:p-8" onSubmit={submitQuote} aria-busy={submitting}>
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="absolute left-[-9999px] h-px w-px opacity-0" aria-hidden="true" />
       {selectedPackage && <><input type="hidden" name="package" value={selectedPackage.name} /><p className="mb-6 rounded-lg bg-cyan-50 p-4 text-sm text-slate-700">Quoting: <strong>{selectedPackage.name}</strong> · from {selectedPackage.price}</p></>}
       <h2 className="text-2xl font-black text-slate-950">Get your free quote</h2>
-      <p className="mt-2 mb-6 text-sm leading-6 text-slate-600">Tell us a little about the job. We’ll follow up to confirm the details and price.</p>
+      <p className="mt-2 mb-6 text-sm leading-6 text-slate-600">Tell us a little about the job. We’ll save it directly in RinsePoint and follow up to confirm the details and price.</p>
+
       <div className="grid gap-5">
         <div>
           <label htmlFor="quote-name" className="mb-2 block text-sm font-black text-slate-700">Name</label>
-          <input id="quote-name" name="name" autoComplete="name" required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-          <ValidationError field="name" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+          <input id="quote-name" name="name" autoComplete="name" required maxLength={120} className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
         </div>
+
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="quote-phone" className="mb-2 block text-sm font-black text-slate-700">Phone</label>
-            <input id="quote-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" required className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-            <ValidationError field="phone" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+            <input id="quote-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
           </div>
           <div>
             <label htmlFor="quote-email" className="mb-2 block text-sm font-black text-slate-700">
               Email <span className="font-medium text-slate-400">(optional)</span>
             </label>
-            <input id="quote-email" name="email" type="email" autoComplete="email" className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-            <ValidationError field="email" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+            <input id="quote-email" name="email" type="email" autoComplete="email" maxLength={254} className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
           </div>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
+
+        <div>
+          <label htmlFor="quote-address" className="mb-2 block text-sm font-black text-slate-700">Service address</label>
+          <input id="quote-address" name="addressLine1" autoComplete="street-address" required maxLength={200} placeholder="123 Main St" className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+        </div>
+
+        <div className="grid min-w-0 gap-5 sm:grid-cols-[minmax(0,1fr)_96px_132px]">
+          <div className="min-w-0">
             <label htmlFor="quote-city" className="mb-2 block text-sm font-black text-slate-700">City</label>
-            <input id="quote-city" name="city" autoComplete="address-level2" required placeholder="Allen, McKinney, Plano..." className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-            <ValidationError field="city" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+            <input id="quote-city" name="city" autoComplete="address-level2" required maxLength={100} placeholder="Allen" className="w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
           </div>
-          <div>
-            <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">Service needed</label>
-            <select id="quote-service" name="service" defaultValue={selectedPackage ? "Driveway / concrete cleaning" : ""} required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
-              <option value="">Choose a service</option>
-              <option>Driveway / concrete cleaning</option>
-              <option>Sidewalk / walkway cleaning</option>
-              <option>Patio / outdoor surface cleaning</option>
-              <option>Commercial concrete cleaning</option>
-              <option>Not sure yet</option>
-            </select>
-            <ValidationError field="service" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+          <div className="min-w-0">
+            <label htmlFor="quote-state" className="mb-2 block text-sm font-black text-slate-700">State</label>
+            <input id="quote-state" name="state" autoComplete="address-level1" required defaultValue="TX" maxLength={2} inputMode="text" className="w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 uppercase outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+          </div>
+          <div className="min-w-0">
+            <label htmlFor="quote-zip" className="mb-2 block text-sm font-black text-slate-700">ZIP</label>
+            <input id="quote-zip" name="postalCode" autoComplete="postal-code" required inputMode="numeric" pattern="\\d{5}(-\\d{4})?" maxLength={10} placeholder="75002" className="w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
           </div>
         </div>
+
+        <div>
+          <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">Service needed</label>
+          <select id="quote-service" name="service" defaultValue={selectedPackage ? "Driveway / concrete cleaning" : ""} required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
+            <option value="">Choose a service</option>
+            <option>Driveway / concrete cleaning</option>
+            <option>Sidewalk / walkway cleaning</option>
+            <option>Patio / outdoor surface cleaning</option>
+            <option>Commercial concrete cleaning</option>
+            <option>Not sure yet</option>
+          </select>
+        </div>
+
         <div>
           <label htmlFor="quote-details" className="mb-2 block text-sm font-black text-slate-700">Project details</label>
-          <textarea id="quote-details" name="message" rows="5" required placeholder="What do you want cleaned? Include approximate size, stains, access notes, or anything else we should know." className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
-          <ValidationError field="message" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+          <textarea id="quote-details" name="message" rows="5" required maxLength={3000} placeholder="What do you want cleaned? Include approximate size, stains, access notes, or anything else we should know." className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
         </div>
-        <button type="submit" disabled={state.submitting} className="rounded-lg bg-cyan-500 px-6 py-4 font-extrabold text-white transition hover:bg-cyan-600 disabled:opacity-60">
-          {state.submitting ? "Sending..." : "Request My Quote"}
+
+        <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+          <input type="checkbox" name="smsConsent" value="yes" className="mt-1 h-4 w-4 shrink-0" />
+          <span>
+            You may text me about this quote and service updates. Message and data rates may apply. Reply STOP to opt out.
+          </span>
+        </label>
+
+        <button type="submit" disabled={submitting} className="rounded-lg bg-cyan-500 px-6 py-4 font-extrabold text-white transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60">
+          {submitting ? "Saving..." : "Request My Quote"}
         </button>
-        <div role="alert"><ValidationError errors={state.errors} className="text-sm font-bold text-red-600" />
-        {state.errors && <p className="mt-2 text-sm text-slate-600">Having trouble? <a href={business.smsLink} className="font-bold underline">Text us your request</a> or call {business.phone}.</p>}</div>
+
+        <div role="alert" aria-live="polite">
+          {submitState.error && (
+            <p className="text-sm font-bold text-red-600">
+              {submitState.error}{" "}
+              <a href={business.phoneLink} className="underline">Call {business.phone}</a> if you need help.
+            </p>
+          )}
+        </div>
+
         <p className="text-xs leading-5 text-slate-500">
-          By submitting, you agree that RinsePoint may contact you about this request. See our <a href="/privacy.html" className="font-bold text-cyan-700 hover:underline">Privacy Policy</a>.
+          By submitting, you agree that RinsePoint may contact you about this request. SMS is optional and only used when you check the text-message box. See our <a href="/privacy.html" className="font-bold text-cyan-700 hover:underline">Privacy Policy</a>.
         </p>
       </div>
     </form>
