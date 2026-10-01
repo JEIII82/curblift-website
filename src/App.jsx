@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm, ValidationError } from "@formspree/react";
+import CrmApp from "./crm/CrmApp.jsx";
+import PublicQuotePage from "./quote/PublicQuotePage.jsx";
+import PublicInvoicePage from "./invoice/PublicInvoicePage.jsx";
 import {
   ArrowRight,
   Building2,
@@ -862,6 +865,18 @@ function CurrentPage() {
 }
 
 export default function App() {
+  if (window.location.pathname === "/app" || window.location.pathname.startsWith("/app/")) {
+    return <CrmApp />;
+  }
+
+  if (window.location.pathname === "/quote" || window.location.pathname.startsWith("/quote/")) {
+    return <PublicQuotePage />;
+  }
+
+  if (window.location.pathname === "/invoice" || window.location.pathname.startsWith("/invoice/")) {
+    return <PublicInvoicePage />;
+  }
+
   return (
     <div className="min-h-screen bg-white pb-20 text-slate-950 lg:pb-0">
       <a className="skip-link" href="#main-content">Skip to content</a>
