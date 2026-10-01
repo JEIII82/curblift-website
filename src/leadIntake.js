@@ -59,7 +59,7 @@ export function buildLeadIntakePayload(
     service: get("service"),
     message: get("message"),
     package: get("package"),
-    preferredContact: smsConsent ? "sms" : email ? "email" : "phone",
+    preferredContact: email ? "email" : "phone",
     smsConsent,
     website: get("website"),
     submittedAt,
