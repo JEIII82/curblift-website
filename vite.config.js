@@ -19,6 +19,7 @@ export default defineConfig({
         contact: resolve(__dirname, 'contact/index.html'),
         app: resolve(__dirname, 'app/index.html'),
         quote: resolve(__dirname, 'quote/index.html'),
+        invoice: resolve(__dirname, 'invoice/index.html'),
       },
     },
   },
