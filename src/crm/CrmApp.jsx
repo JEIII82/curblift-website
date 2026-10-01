@@ -350,11 +350,26 @@ export default function CrmApp() {
 
   useEffect(() => {
     if (!session) { setBooting(false); return; }
+
+    let cancelled = false;
     setBooting(true);
     setBootError("");
+
     claimOwner(session)
-      .catch((err) => setBootError(err.message))
-      .finally(() => setBooting(false));
+      .then(({ session: freshSession }) => {
+        if (cancelled) return;
+        if (freshSession?.access_token && freshSession.access_token !== session.access_token) {
+          setSession(freshSession);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setBootError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setBooting(false);
+      });
+
+    return () => { cancelled = true; };
   }, [session]);
 
   async function logout() {
