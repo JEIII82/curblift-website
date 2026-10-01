@@ -215,7 +215,7 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
       if (markSent) {
         const sent = await quoteAdmin(session, { action: "send", quoteId: result.quote.id });
         setSavedQuote((current) => ({ ...current, ...sent.quote }));
-        setNotice("Quote is ready for the customer. The secure customer link is below.");
+        setNotice("Quote sent. Waiting for customer approval — no job is created until the customer approves it. The secure customer link is below.");
       } else {
         setNotice(`Draft quote #${result.quote.quote_number} saved.`);
       }
@@ -299,15 +299,15 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
               {form.items.map((item, index) => (
                 <div key={item.localId} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-3"><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Line {index + 1}</p><button onClick={() => setForm((current) => ({ ...current, items: current.items.filter((row) => row.localId !== item.localId) }))} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button></div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-[1fr_110px_140px]">
-                    <label className="grid gap-1.5 text-xs font-extrabold text-slate-500">Service / item
-                      <input value={item.name} onChange={(e) => patchItem(item.localId, "name", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-cyan-600" />
+                  <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_110px_140px]">
+                    <label className="grid min-w-0 gap-1.5 text-xs font-extrabold text-slate-500">Service / item
+                      <input value={item.name} onChange={(e) => patchItem(item.localId, "name", e.target.value)} className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-cyan-600" />
                     </label>
-                    <label className="grid gap-1.5 text-xs font-extrabold text-slate-500">Qty
-                      <input value={item.quantity} type="number" min="0.001" step="0.001" onChange={(e) => patchItem(item.localId, "quantity", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600" />
+                    <label className="grid min-w-0 gap-1.5 text-xs font-extrabold text-slate-500">Qty
+                      <input value={item.quantity} type="number" min="0.001" step="0.001" onChange={(e) => patchItem(item.localId, "quantity", e.target.value)} className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600" />
                     </label>
-                    <label className="grid gap-1.5 text-xs font-extrabold text-slate-500">Unit price
-                      <input value={item.unitPrice} type="number" min="0" step="0.01" onChange={(e) => patchItem(item.localId, "unitPrice", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600" />
+                    <label className="grid min-w-0 gap-1.5 text-xs font-extrabold text-slate-500">Unit price
+                      <input value={item.unitPrice} type="number" min="0" step="0.01" onChange={(e) => patchItem(item.localId, "unitPrice", e.target.value)} className="w-full min-w-0 rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-cyan-600" />
                     </label>
                   </div>
                   <label className="mt-3 grid gap-1.5 text-xs font-extrabold text-slate-500">Description
