@@ -425,7 +425,7 @@ export default function QuotePage({ session, initialLead, onInitialLeadHandled }
             <tbody className="divide-y divide-slate-100">{quotes.map((quote) => (
               <tr key={quote.id} className="hover:bg-slate-50/70">
                 <td className="px-5 py-4"><p className="font-black text-slate-900">#{quote.quote_number}</p><p className="mt-1 text-xs text-slate-500">{quote.title || "Exterior Cleaning"}</p></td>
-                <td className="px-5 py-4"><p className="font-bold text-slate-800">{quote.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{quote.property ? `${quote.property.address_line1}, ${quote.property.city}` : "Address pending"}</p></td>
+                <td className="px-5 py-4"><p className="font-bold text-slate-800">{quote.lead?.submitted_name || quote.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{quote.property ? `${quote.property.address_line1}, ${quote.property.city}` : "Address pending"}</p></td>
                 <td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{statusLabel(quote.status)}</span></td>
                 <td className="px-5 py-4 font-black text-slate-900">{money(quote.total)}</td>
                 <td className="px-5 py-4 text-slate-500">{quote.expires_at ? new Date(quote.expires_at).toLocaleDateString() : "—"}</td>
