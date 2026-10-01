@@ -411,18 +411,19 @@ function QuoteForm() {
     if (submittedLead.current && !mirroredLead.current) {
       mirroredLead.current = true;
 
-      const payload = new URLSearchParams({
+      const payload = {
         ...submittedLead.current,
         submittedAt: new Date().toISOString(),
-      });
+        requestId: crypto.randomUUID(),
+      };
 
-      fetch("https://hook.us2.make.com/9n2xnd9g8xutjgj2qgvsg36g1ehg1a5h", {
+      fetch("https://cfrdooivdzjuqsauhaqy.supabase.co/functions/v1/lead-intake", {
         method: "POST",
-        mode: "no-cors",
-        body: payload,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
         keepalive: true,
       }).catch(() => {
-        // Formspree remains the source of truth if the automation is unavailable.
+        // Formspree remains a fallback record if the CRM intake API is temporarily unavailable.
       });
     }
   }, [state.succeeded]);
