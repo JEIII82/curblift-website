@@ -260,7 +260,7 @@ export async function getPublicInvoice(token) {
 export async function publicInvoiceCheckout(token, action) {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/invoice-checkout`, {
     method: "POST",
-    headers: headers(null, { "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, action }),
   });
   return readJson(response);
