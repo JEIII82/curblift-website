@@ -57,7 +57,7 @@ function badgeClass(status) {
   return "bg-slate-100 text-slate-600";
 }
 
-function JobList({ session, onOpen }) {
+function JobList({ session, onOpen, onOpenCustomer }) {
   const [jobs, setJobs] = useState(null);
   const [error, setError] = useState("");
 
@@ -92,20 +92,22 @@ function JobList({ session, onOpen }) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {jobs.map((job) => (
-            <tr key={job.id} className="hover:bg-slate-50/70">
+            <tr key={job.id} role="button" tabIndex={0} onClick={() => onOpen(job.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onOpen(job.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none">
               <td className="px-5 py-4">
                 <p className="font-black text-slate-900">#{job.job_number} · {job.title}</p>
                 <p className="mt-1 text-xs text-slate-500">{job.property ? `${job.property.address_line1}, ${job.property.city}` : "Address pending"}</p>
               </td>
               <td className="px-5 py-4">
-                <p className="font-bold text-slate-800">{job.lead?.submitted_name || job.customer?.display_name || "—"}</p>
-                <p className="mt-1 text-xs text-slate-500">{job.lead?.submitted_phone || job.lead?.submitted_email || job.customer?.phone || job.customer?.email || "—"}</p>
+                <button type="button" onClick={(event) => { event.stopPropagation(); onOpenCustomer?.(job.customer?.id); }} className="text-left hover:text-cyan-800">
+                  <p className="font-bold text-slate-800">{job.lead?.submitted_name || job.customer?.display_name || "—"}</p>
+                  <p className="mt-1 text-xs text-slate-500">{job.lead?.submitted_phone || job.lead?.submitted_email || job.customer?.phone || job.customer?.email || "—"}</p>
+                </button>
               </td>
               <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-black ${badgeClass(job.status)}`}>{label(job.status)}</span></td>
               <td className="px-5 py-4 text-slate-600">{job.scheduled_start ? formatDate(job.scheduled_start, true) : "Not scheduled"}</td>
               <td className="px-5 py-4 font-black text-slate-900">{money(job.final_total ?? job.quoted_total)}</td>
               <td className="px-5 py-4 text-right">
-                <button onClick={() => onOpen(job.id)} className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open <ChevronRight className="h-3.5 w-3.5" /></button>
+                <button onClick={(event) => { event.stopPropagation(); onOpen(job.id); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open <ChevronRight className="h-3.5 w-3.5" /></button>
               </td>
             </tr>
           ))}
@@ -115,7 +117,7 @@ function JobList({ session, onOpen }) {
   );
 }
 
-function JobDetail({ session, jobId, onBack }) {
+function JobDetail({ session, jobId, onBack, onOpenCustomer }) {
   const [job, setJob] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -218,7 +220,7 @@ function JobDetail({ session, jobId, onBack }) {
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Customer</p>
-                <p className="mt-2 font-black text-slate-900">{job.lead?.submitted_name || job.customer?.display_name}</p>
+                <button type="button" onClick={() => onOpenCustomer?.(job.customer?.id)} className="mt-2 text-left font-black text-slate-900 hover:text-cyan-800">{job.lead?.submitted_name || job.customer?.display_name}</button>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {job.customer?.phone && <a href={`tel:${job.customer.phone}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700"><Phone className="h-4 w-4" /> Call</a>}
                 </div>
@@ -313,9 +315,15 @@ function JobDetail({ session, jobId, onBack }) {
   );
 }
 
-export default function JobPage({ session }) {
+export default function JobPage({ session, initialJobId, onInitialJobHandled, onOpenCustomer }) {
   const [selectedId, setSelectedId] = useState(null);
 
-  if (selectedId) return <JobDetail session={session} jobId={selectedId} onBack={() => setSelectedId(null)} />;
-  return <JobList session={session} onOpen={setSelectedId} />;
+  useEffect(() => {
+    if (!initialJobId) return;
+    setSelectedId(initialJobId);
+    onInitialJobHandled?.();
+  }, [initialJobId, onInitialJobHandled]);
+
+  if (selectedId) return <JobDetail session={session} jobId={selectedId} onBack={() => setSelectedId(null)} onOpenCustomer={onOpenCustomer} />;
+  return <JobList session={session} onOpen={setSelectedId} onOpenCustomer={onOpenCustomer} />;
 }
