@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, ReceiptText } from "lucide-react";
-import { getPublicInvoice } from "../crm/api.js";
+import { CheckCircle2, CreditCard, Loader2, ReceiptText } from "lucide-react";
+import { getPublicInvoice, publicInvoiceCheckout } from "../crm/api.js";
 
 function money(value) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value || 0));
@@ -15,11 +15,63 @@ export default function PublicInvoicePage() {
   const token = new URLSearchParams(window.location.search).get("token") || "";
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function load() {
+    const next = await getPublicInvoice(token);
+    setData(next);
+    return next;
+  }
 
   useEffect(() => {
     document.title = "Your RinsePoint Invoice";
-    getPublicInvoice(token).then(setData).catch((err) => setError(err.message));
+
+    async function initialize() {
+      try {
+        await load();
+
+        const paymentResult = new URLSearchParams(window.location.search).get("payment");
+        if (paymentResult === "success") {
+          setBusy("verify");
+          setNotice("Confirming your payment…");
+
+          for (let attempt = 0; attempt < 4; attempt += 1) {
+            const result = await publicInvoiceCheckout(token, "verify");
+            if (result?.paid) {
+              await load();
+              setNotice("Payment confirmed. Thank you!");
+              break;
+            }
+            if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1200));
+          }
+
+          setBusy("");
+        } else if (paymentResult === "cancel") {
+          setNotice("Payment was canceled. No charge was made.");
+        }
+      } catch (err) {
+        setError(err.message);
+        setBusy("");
+      }
+    }
+
+    initialize();
   }, [token]);
+
+  async function startCheckout() {
+    setBusy("checkout");
+    setError("");
+    setNotice("");
+    try {
+      const result = await publicInvoiceCheckout(token, "start");
+      if (!result?.checkoutUrl) throw new Error("Unable to open secure checkout.");
+      window.location.assign(result.checkoutUrl);
+    } catch (err) {
+      setError(err.message);
+      setBusy("");
+    }
+  }
 
   if (!token) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><p className="font-black text-slate-700">This invoice link is incomplete.</p></main>;
   if (!data && !error) return <main className="grid min-h-screen place-items-center bg-slate-50"><Loader2 className="h-8 w-8 animate-spin text-cyan-700" /></main>;
@@ -63,11 +115,33 @@ export default function PublicInvoicePage() {
             </div>
           </section>
 
+          {notice && (
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-4 text-sm font-bold text-cyan-950">
+              {notice}
+            </div>
+          )}
+
           {isPaid ? (
             <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center"><CheckCircle2 className="mx-auto h-9 w-9 text-emerald-700" /><h2 className="mt-3 text-xl font-black text-emerald-950">Paid in full</h2><p className="mt-2 text-sm text-emerald-800">Thank you for choosing RinsePoint.</p></section>
           ) : (
             <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-              <div className="flex items-start gap-3"><ReceiptText className="mt-0.5 h-5 w-5 text-cyan-700" /><div><h2 className="font-black text-slate-950">Payment</h2><p className="mt-1 text-sm leading-6 text-slate-500">Online payment is being connected. For now, reply to your RinsePoint invoice email or call/text {organization?.phone} to arrange payment.</p></div></div>
+              <div className="flex items-start gap-3">
+                <ReceiptText className="mt-0.5 h-5 w-5 text-cyan-700" />
+                <div className="w-full">
+                  <h2 className="font-black text-slate-950">Secure online payment</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">Pay your remaining balance securely through Stripe. Card and supported wallet options appear on the Stripe checkout page.</p>
+                  <button
+                    type="button"
+                    disabled={Boolean(busy)}
+                    onClick={startCheckout}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-700 px-5 py-4 text-base font-black text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {busy === "checkout" ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
+                    Pay {money(invoice.amount_due)} securely
+                  </button>
+                  <p className="mt-3 text-xs leading-5 text-slate-400">Payment is processed by Stripe. RinsePoint does not store your card number.</p>
+                </div>
+              </div>
             </section>
           )}
 
