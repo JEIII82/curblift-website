@@ -164,21 +164,32 @@ export function getLeads(session) {
 }
 
 export function getCustomers(session) {
-  return rest(session, `customers?select=id,display_name,email,phone,lead_source,created_at&organization_id=eq.${ORGANIZATION_ID}&archived_at=is.null&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `customers?select=id,display_name,company_name,email,phone,preferred_contact,tags,notes,lead_source,created_at&organization_id=eq.${ORGANIZATION_ID}&archived_at=is.null&order=updated_at.desc,created_at.desc&limit=200`, { method: "GET" });
+}
+
+export function updateCustomer(session, customerId, payload) {
+  return rest(session, `customers?id=eq.${encodeURIComponent(customerId)}&organization_id=eq.${ORGANIZATION_ID}`, {
+    method: "PATCH",
+    body: JSON.stringify({ ...payload, updated_at: new Date().toISOString() }),
+  }).then((rows) => rows?.[0] || null);
 }
 
 export async function getCustomerWorkspace(session, customerId) {
   const id = encodeURIComponent(customerId);
   const org = `organization_id=eq.${ORGANIZATION_ID}`;
 
-  const [customerRows, properties, leads, quotes, jobs, invoices, payments, activity] = await Promise.all([
+  const [customerRows, properties, leads, quotes, jobs, invoices, payments, appointments, communications, tasks, reviews, activity] = await Promise.all([
     rest(session, `customers?select=id,display_name,first_name,last_name,company_name,email,phone,preferred_contact,tags,notes,lead_source,marketing_opt_in,sms_consent_at,sms_opt_out_at,sms_consent_source,created_at,updated_at&${org}&id=eq.${id}&limit=1`, { method: "GET" }),
-    rest(session, `properties?select=id,label,address_line1,address_line2,city,state,postal_code,is_primary,created_at&${org}&customer_id=eq.${id}&archived_at=is.null&order=is_primary.desc,created_at.desc`, { method: "GET" }),
+    rest(session, `properties?select=id,label,address_line1,address_line2,city,state,postal_code,access_notes,property_notes,is_primary,created_at&${org}&customer_id=eq.${id}&archived_at=is.null&order=is_primary.desc,created_at.desc`, { method: "GET" }),
     rest(session, `leads?select=id,status,requested_service,requested_package,project_details,service_city,service_state,submitted_name,submitted_email,submitted_phone,created_at,closed_at,property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
-    rest(session, `quotes?select=id,quote_number,status,title,total,created_at,sent_at,approved_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code),jobs(id,job_number,status)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
-    rest(session, `jobs?select=id,job_number,status,title,quoted_total,final_total,scheduled_start,completed_at,created_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
-    rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,sent_at,paid_at,created_at,job:jobs(id,job_number,title,lead:leads(id,submitted_name,requested_service))&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `quotes?select=id,quote_number,status,title,total,subtotal,tax_amount,created_at,sent_at,viewed_at,approved_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code),jobs(id,job_number,status)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `jobs?select=id,job_number,status,title,scope_of_work,quoted_total,final_total,scheduled_start,scheduled_end,actual_start,actual_end,completed_at,created_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `invoices?select=id,invoice_number,status,subtotal,tax_amount,total,amount_paid,amount_due,due_at,sent_at,paid_at,created_at,job:jobs(id,job_number,title,lead:leads(id,submitted_name,requested_service))&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
     rest(session, `payments?select=id,invoice_id,amount,status,method,provider,paid_at,created_at&${org}&customer_id=eq.${id}&order=paid_at.desc.nullslast,created_at.desc`, { method: "GET" }),
+    rest(session, `appointments?select=id,job_id,status,starts_at,ends_at,arrival_window_minutes,notes,job:jobs(id,job_number,title,status)&${org}&customer_id=eq.${id}&order=starts_at.desc.nullslast,created_at.desc`, { method: "GET" }),
+    rest(session, `communications?select=id,channel,direction,subject,body,status,provider,sent_at,received_at,created_at,lead_id,quote_id,job_id,invoice_id&${org}&customer_id=eq.${id}&order=created_at.desc&limit=100`, { method: "GET" }),
+    rest(session, `tasks?select=id,title,description,status,priority,due_at,completed_at,lead_id,quote_id,job_id,invoice_id,created_at&${org}&customer_id=eq.${id}&order=due_at.asc.nullslast,created_at.desc&limit=100`, { method: "GET" }),
+    rest(session, `reviews?select=id,status,platform,requested_at,received_at,rating,review_url,notes,job_id,created_at&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
     rest(session, `activity_events?select=id,event_type,summary,entity_type,entity_id,created_at,metadata&${org}&customer_id=eq.${id}&order=created_at.desc&limit=100`, { method: "GET" }),
   ]);
 
@@ -190,8 +201,25 @@ export async function getCustomerWorkspace(session, customerId) {
     jobs,
     invoices,
     payments,
+    appointments,
+    communications,
+    tasks,
+    reviews,
     activity,
   };
+}
+
+export async function getSchedule(session, startIso, endIso) {
+  const org = `organization_id=eq.${ORGANIZATION_ID}`;
+  const start = encodeURIComponent(startIso);
+  const end = encodeURIComponent(endIso);
+
+  const [appointments, unscheduledJobs] = await Promise.all([
+    rest(session, `appointments?select=id,status,appointment_type,starts_at,ends_at,arrival_window_minutes,notes,customer:customers(id,display_name,phone,email),property:properties(id,address_line1,city,state,postal_code),job:jobs(id,job_number,title,status)&${org}&starts_at=gte.${start}&starts_at=lt.${end}&order=starts_at.asc`, { method: "GET" }),
+    rest(session, `jobs?select=id,job_number,title,status,quoted_total,created_at,customer:customers(id,display_name,phone,email),lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code)&${org}&status=eq.unscheduled&order=created_at.asc`, { method: "GET" }),
+  ]);
+
+  return { appointments, unscheduledJobs };
 }
 
 export function getQuotes(session) {
