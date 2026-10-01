@@ -12,7 +12,6 @@ import {
   Search,
   Settings,
   Users,
-  X,
 } from "lucide-react";
 import {
   claimOwner,
