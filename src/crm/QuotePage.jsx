@@ -250,33 +250,31 @@ function QuoteBuilder({ session, customers, services, lead, quoteId, onClose, on
         <section className="grid gap-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h3 className="text-lg font-black text-slate-950">Customer & service address</h3>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2 text-sm font-extrabold text-slate-700">Customer
-                <select value={form.customerId} disabled={Boolean(lead)} onChange={(e) => patch("customerId", e.target.value)} className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-600">
+            <div className="mt-5 grid min-w-0 gap-4 md:grid-cols-12">
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-6">Customer
+                <select value={form.customerId} disabled={Boolean(lead)} onChange={(e) => patch("customerId", e.target.value)} className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-600">
                   <option value="">Choose customer</option>
                   {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.display_name}{customer.email ? ` — ${customer.email}` : ""}</option>)}
                 </select>
               </label>
-              <label className="grid gap-2 text-sm font-extrabold text-slate-700">Saved property
-                <select value={form.propertyId} onChange={(e) => chooseProperty(e.target.value)} className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-600">
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-6">Saved property
+                <select value={form.propertyId} onChange={(e) => chooseProperty(e.target.value)} className="w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-600">
                   <option value="">Enter a new address</option>
                   {properties.map((property) => <option key={property.id} value={property.id}>{property.address_line1}, {property.city}</option>)}
                 </select>
               </label>
-              <label className="grid gap-2 text-sm font-extrabold text-slate-700 md:col-span-2">Street address
-                <input value={form.addressLine1} onChange={(e) => { patch("propertyId", ""); patch("addressLine1", e.target.value); }} placeholder="123 Main St" className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-12">Street address
+                <input value={form.addressLine1} onChange={(e) => { patch("propertyId", ""); patch("addressLine1", e.target.value); }} placeholder="123 Main St" className="w-full min-w-0 rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
               </label>
-              <label className="grid gap-2 text-sm font-extrabold text-slate-700">City
-                <input value={form.city} onChange={(e) => patch("city", e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-6">City
+                <input value={form.city} onChange={(e) => patch("city", e.target.value)} className="w-full min-w-0 rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
               </label>
-              <div className="grid grid-cols-[.55fr_.45fr] gap-3">
-                <label className="grid gap-2 text-sm font-extrabold text-slate-700">State
-                  <input value={form.state} onChange={(e) => patch("state", e.target.value.toUpperCase())} className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
-                </label>
-                <label className="grid gap-2 text-sm font-extrabold text-slate-700">ZIP
-                  <input value={form.postalCode} onChange={(e) => patch("postalCode", e.target.value)} className="rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
-                </label>
-              </div>
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-2">State
+                <input value={form.state} onChange={(e) => patch("state", e.target.value.toUpperCase())} className="w-full min-w-0 rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
+              </label>
+              <label className="grid min-w-0 gap-2 text-sm font-extrabold text-slate-700 md:col-span-4">ZIP
+                <input value={form.postalCode} onChange={(e) => patch("postalCode", e.target.value)} className="w-full min-w-0 rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-600" />
+              </label>
             </div>
           </div>
 
