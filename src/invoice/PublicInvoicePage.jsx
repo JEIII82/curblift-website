@@ -15,6 +15,7 @@ export default function PublicInvoicePage() {
   const token = new URLSearchParams(window.location.search).get("token") || "";
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -61,21 +62,21 @@ export default function PublicInvoicePage() {
 
   async function startCheckout() {
     setBusy("checkout");
-    setError("");
+    setCheckoutError("");
     setNotice("");
     try {
       const result = await publicInvoiceCheckout(token, "start");
       if (!result?.checkoutUrl) throw new Error("Unable to open secure checkout.");
       window.location.assign(result.checkoutUrl);
     } catch (err) {
-      setError(err.message);
+      setCheckoutError(err.message);
       setBusy("");
     }
   }
 
   if (!token) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><p className="font-black text-slate-700">This invoice link is incomplete.</p></main>;
   if (!data && !error) return <main className="grid min-h-screen place-items-center bg-slate-50"><Loader2 className="h-8 w-8 animate-spin text-cyan-700" /></main>;
-  if (error) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm"><h1 className="text-2xl font-black text-slate-950">Invoice unavailable</h1><p className="mt-3 text-slate-600">{error}</p></div></main>;
+  if (error && !data) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm"><h1 className="text-2xl font-black text-slate-950">Invoice unavailable</h1><p className="mt-3 text-slate-600">{error}</p></div></main>;
 
   const { invoice, organization } = data;
   const isPaid = invoice.status === "paid";
@@ -130,6 +131,7 @@ export default function PublicInvoicePage() {
                 <div className="w-full">
                   <h2 className="font-black text-slate-950">Secure online payment</h2>
                   <p className="mt-1 text-sm leading-6 text-slate-500">Pay your remaining balance securely through Stripe. Card and supported wallet options appear on the Stripe checkout page.</p>
+                  {(checkoutError || error) && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{checkoutError || error}</div>}
                   <button
                     type="button"
                     disabled={Boolean(busy)}
