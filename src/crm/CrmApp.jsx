@@ -428,6 +428,16 @@ export default function CrmApp() {
     setActive("invoices");
   }
 
+  function createQuoteFromLead(lead) {
+    if (!lead) return;
+    setCustomerId(null);
+    setQuoteId(null);
+    setJobId(null);
+    setInvoiceId(null);
+    setQuoteLead(lead);
+    setActive("quotes");
+  }
+
   if (!session) return <Login onSession={setSession} />;
   if (booting) return <main className="grid min-h-screen place-items-center bg-slate-50"><p className="font-black text-slate-500">Opening RinsePoint OS…</p></main>;
   if (bootError) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 shadow-sm"><h1 className="text-2xl font-black text-slate-950">Access needs attention</h1><p className="mt-3 leading-7 text-slate-600">{bootError}</p><button onClick={logout} className="mt-6 rounded-xl bg-slate-950 px-5 py-3 font-black text-white">Sign out</button></div></main>;
@@ -440,8 +450,8 @@ export default function CrmApp() {
         <PageHeader title={titles[active]} eyebrow="RinsePoint OS" onMenu={() => setMenuOpen(true)} />
         <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
           {active === "dashboard" && <Dashboard session={session} onOpenCustomer={openCustomer} onNavigate={navigateSection} />}
-          {active === "leads" && <Leads session={session} onOpenCustomer={openCustomer} onCreateQuote={(lead) => { setCustomerId(null); setQuoteId(null); setQuoteLead(lead); setActive("quotes"); }} />}
-          {active === "customers" && <CustomerPage session={session} initialCustomerId={customerId} onInitialCustomerHandled={() => setCustomerId(null)} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} />}
+          {active === "leads" && <Leads session={session} onOpenCustomer={openCustomer} onCreateQuote={createQuoteFromLead} />}
+          {active === "customers" && <CustomerPage session={session} initialCustomerId={customerId} onInitialCustomerHandled={() => setCustomerId(null)} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} onCreateQuote={createQuoteFromLead} />}
           {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} initialQuoteId={quoteId} onInitialLeadHandled={() => setQuoteLead(null)} onInitialQuoteHandled={() => setQuoteId(null)} onOpenCustomer={openCustomer} />}
           {active === "jobs" && <JobPage session={session} initialJobId={jobId} onInitialJobHandled={() => setJobId(null)} onOpenCustomer={openCustomer} />}
           {active === "calendar" && <DataPage session={session} loader={getAppointments} type="Calendar" />}
