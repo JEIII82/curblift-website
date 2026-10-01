@@ -99,12 +99,15 @@ export async function ensureFreshSession(session = getStoredSession()) {
 }
 
 export async function claimOwner(session) {
+  const fresh = await ensureFreshSession(session);
+  if (!fresh) throw new Error("Your session expired. Please sign in again.");
+
   const response = await fetch(`${SUPABASE_URL}/functions/v1/claim-owner`, {
     method: "POST",
-    headers: headers(session, { "Content-Type": "application/json" }),
+    headers: headers(fresh, { "Content-Type": "application/json" }),
     body: "{}",
   });
-  return readJson(response);
+  return { result: await readJson(response), session: fresh };
 }
 
 export async function rest(session, path, options = {}) {
