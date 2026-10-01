@@ -36,6 +36,9 @@ export function getStoredSession() {
 }
 
 function storeSession(session) {
+  if (session?.access_token && session.expires_in && !session.expires_at) {
+    session = { ...session, expires_at: Math.floor(Date.now() / 1000) + Number(session.expires_in) };
+  }
   if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   else localStorage.removeItem(SESSION_KEY);
   return session;
