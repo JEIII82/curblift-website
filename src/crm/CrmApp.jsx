@@ -13,6 +13,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import QuotePage from "./QuotePage.jsx";
 import {
   claimOwner,
   getAppointments,
@@ -208,7 +209,7 @@ function Dashboard({ session }) {
   );
 }
 
-function Leads({ session }) {
+function Leads({ session, onCreateQuote }) {
   const [rows, setRows] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -232,8 +233,8 @@ function Leads({ session }) {
       {!rows ? <p className="text-sm font-bold text-slate-500">Loading leads…</p> : filtered.length ? (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-[900px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Service</th><th className="px-5 py-4">City</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Received</th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => <tr key={lead.id} className="hover:bg-slate-50/70"><td className="px-5 py-4"><p className="font-black text-slate-900">{lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td><td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td><td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td><td className="px-5 py-4"><select value={lead.status} onChange={(e) => changeStatus(lead.id, e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700">{Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td></tr>)}</tbody>
+            <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Service</th><th className="px-5 py-4">City</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Received</th><th className="px-5 py-4"></th></tr></thead>
+            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => <tr key={lead.id} className="hover:bg-slate-50/70"><td className="px-5 py-4"><p className="font-black text-slate-900">{lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td><td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td><td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td><td className="px-5 py-4"><select value={lead.status} onChange={(e) => changeStatus(lead.id, e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700">{Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td><td className="px-5 py-4 text-right"><button onClick={() => onCreateQuote(lead)} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Create quote</button></td></tr>)}</tbody>
           </table>
         </div>
       ) : <EmptyState title="No matching leads" text="Try a different search, or wait for the next website request." />}
@@ -329,6 +330,7 @@ export default function CrmApp() {
   const [session, setSession] = useState(() => getStoredSession());
   const [active, setActive] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quoteLead, setQuoteLead] = useState(null);
   const [booting, setBooting] = useState(Boolean(session));
   const [bootError, setBootError] = useState("");
 
@@ -373,9 +375,9 @@ export default function CrmApp() {
         <PageHeader title={titles[active]} eyebrow="RinsePoint OS" onMenu={() => setMenuOpen(true)} />
         <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
           {active === "dashboard" && <Dashboard session={session} />}
-          {active === "leads" && <Leads session={session} />}
+          {active === "leads" && <Leads session={session} onCreateQuote={(lead) => { setQuoteLead(lead); setActive("quotes"); }} />}
           {active === "customers" && <DataPage session={session} loader={getCustomers} type="Customers" />}
-          {active === "quotes" && <DataPage session={session} loader={getQuotes} type="Quotes" />}
+          {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} onInitialLeadHandled={() => setQuoteLead(null)} />}
           {active === "jobs" && <DataPage session={session} loader={getJobs} type="Jobs" />}
           {active === "calendar" && <DataPage session={session} loader={getAppointments} type="Calendar" />}
           {active === "invoices" && <DataPage session={session} loader={getInvoices} type="Invoices" />}
