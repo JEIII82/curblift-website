@@ -254,6 +254,15 @@ export async function getPublicInvoice(token) {
   return readJson(response);
 }
 
+export async function publicInvoiceCheckout(token, action) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/invoice-checkout`, {
+    method: "POST",
+    headers: headers(null, { "Content-Type": "application/json" }),
+    body: JSON.stringify({ token, action }),
+  });
+  return readJson(response);
+}
+
 export function getServices(session) {
   return rest(session, `services?select=id,name,category,description,pricing_model,base_price,unit_price,unit_name,active,sort_order&organization_id=eq.${ORGANIZATION_ID}&order=sort_order.asc`, { method: "GET" });
 }
