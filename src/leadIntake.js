@@ -89,11 +89,11 @@ export async function submitLeadIntake(
     keepalive: true,
   });
 
-  let body = null;
+  let body;
   try {
     body = await response.json();
   } catch {
-    body = null;
+    // A non-JSON failure is still treated as an intake failure below.
   }
 
   if (!response.ok || !body?.ok) {
