@@ -157,7 +157,7 @@ export async function getDashboard(session) {
 }
 
 export function getLeads(session) {
-  return rest(session, `leads?select=id,status,requested_service,service_city,project_details,created_at,customer:customers(display_name,email,phone)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getCustomers(session) {
@@ -165,7 +165,43 @@ export function getCustomers(session) {
 }
 
 export function getQuotes(session) {
-  return rest(session, `quotes?select=id,quote_number,status,total,expires_at,created_at,customer:customers(display_name)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `quotes?select=id,quote_number,status,title,subtotal,discount_amount,tax_amount,total,expires_at,sent_at,viewed_at,approved_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+}
+
+export function getQuoteDetails(session, quoteId) {
+  return rest(session, `quotes?select=id,quote_number,status,title,customer_message,internal_notes,subtotal,discount_amount,tax_amount,total,expires_at,public_token,lead_id,customer_id,property_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),items:quote_items(id,service_id,name,description,quantity,unit_price,line_total,optional,selected,sort_order)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(quoteId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+}
+
+export function getCustomerProperties(session, customerId) {
+  return rest(session, `properties?select=id,label,address_line1,address_line2,city,state,postal_code,is_primary&organization_id=eq.${ORGANIZATION_ID}&customer_id=eq.${encodeURIComponent(customerId)}&archived_at=is.null&order=is_primary.desc,created_at.desc`, { method: "GET" });
+}
+
+export async function quoteAdmin(session, payload) {
+  const fresh = await ensureFreshSession(session);
+  if (!fresh) throw new Error("Your session expired. Please sign in again.");
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quote-admin`, {
+    method: "POST",
+    headers: headers(fresh, { "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  return readJson(response);
+}
+
+export async function getPublicQuote(token) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quote-public?token=${encodeURIComponent(token)}`, {
+    method: "GET",
+    headers: headers(null),
+  });
+  return readJson(response);
+}
+
+export async function publicQuoteAction(token, action, data = {}) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quote-public`, {
+    method: "POST",
+    headers: headers(null, { "Content-Type": "application/json" }),
+    body: JSON.stringify({ token, action, ...data }),
+  });
+  return readJson(response);
 }
 
 export function getJobs(session) {
