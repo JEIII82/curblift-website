@@ -131,7 +131,11 @@ function InvoiceDetail({ session, invoiceId, onBack }) {
             </div>
             <div className="ml-auto mt-5 max-w-sm border-t border-slate-200 pt-4">
               <div className="grid gap-2 text-sm">
-                <div className="flex justify-between text-slate-500"><span>Total</span><strong className="text-slate-900">{money(invoice.total)}</strong></div>
+                <div className="flex justify-between text-slate-500"><span>Subtotal</span><strong className="text-slate-900">{money(invoice.subtotal)}</strong></div>
+                {Number(invoice.discount_amount) > 0 && <div className="flex justify-between text-slate-500"><span>Discount</span><strong className="text-slate-900">-{money(invoice.discount_amount)}</strong></div>}
+                {Number(invoice.tax_amount) > 0 && <div className="flex justify-between text-slate-500"><span>Sales tax ({Number(invoice.tax_rate || 0).toFixed(2)}%)</span><strong className="text-slate-900">{money(invoice.tax_amount)}</strong></div>}
+                {invoice.tax_exempt && <div className="flex justify-between text-slate-500"><span>Sales tax</span><strong className="text-slate-900">Exempt</strong></div>}
+                <div className="flex justify-between border-t border-slate-200 pt-3 text-slate-700"><span className="font-bold">Total</span><strong className="text-slate-900">{money(invoice.total)}</strong></div>
                 <div className="flex justify-between text-slate-500"><span>Paid</span><strong className="text-slate-900">{money(invoice.amount_paid)}</strong></div>
                 <div className="flex justify-between border-t border-slate-200 pt-3 text-lg"><span className="font-black">Amount due</span><strong className="text-2xl font-black">{money(invoice.amount_due)}</strong></div>
               </div>
