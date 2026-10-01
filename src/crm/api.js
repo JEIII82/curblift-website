@@ -228,7 +228,30 @@ export function getAppointments(session) {
 }
 
 export function getInvoices(session) {
-  return rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,created_at,customer:customers(display_name)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `invoices?select=id,invoice_number,status,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,city,state,postal_code),job:jobs(id,job_number,title)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+}
+
+export function getInvoiceDetails(session, invoiceId) {
+  return rest(session, `invoices?select=id,invoice_number,status,subtotal,discount_amount,tax_amount,total,amount_paid,amount_due,due_at,sent_at,paid_at,public_token,notes,customer_id,property_id,job_id,quote_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),job:jobs(id,job_number,title),items:invoice_items(id,service_id,name,description,quantity,unit_price,line_total,sort_order),payments(id,amount,status,method,paid_at,notes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(invoiceId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+}
+
+export async function invoiceAdmin(session, payload) {
+  const fresh = await ensureFreshSession(session);
+  if (!fresh) throw new Error("Your session expired. Please sign in again.");
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/invoice-admin`, {
+    method: "POST",
+    headers: headers(fresh, { "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  return readJson(response);
+}
+
+export async function getPublicInvoice(token) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/invoice-public?token=${encodeURIComponent(token)}`, {
+    method: "GET",
+    headers: headers(null),
+  });
+  return readJson(response);
 }
 
 export function getServices(session) {
