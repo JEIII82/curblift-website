@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, FilePlus2, Loader2, Plus, Save, Send, Trash2, X } from "lucide-react";
+import { Copy, FilePlus2, Loader2, Plus, Save, Send, Trash2 } from "lucide-react";
 import {
   getCustomerProperties,
   getCustomers,
