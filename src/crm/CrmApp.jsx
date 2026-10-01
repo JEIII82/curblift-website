@@ -20,7 +20,6 @@ import CustomerPage from "./CustomerPage.jsx";
 import CalendarPage from "./CalendarPage.jsx";
 import {
   claimOwner,
-   getCustomers,
   getDashboard,
   getLeads,
   getServices,
