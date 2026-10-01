@@ -22,7 +22,6 @@ import {
   getInvoices,
   getJobs,
   getLeads,
-  getQuotes,
   getServices,
   getStoredSession,
   signIn,
