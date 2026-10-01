@@ -5,6 +5,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
+  CreditCard,
   FileText,
   Mail,
   MapPin,
@@ -74,7 +75,107 @@ function ClickRow({ onClick, children }) {
   );
 }
 
-function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, onOpenInvoice }) {
+function getNextAction({ leads, quotes, jobs, invoices }) {
+  const draftInvoice = invoices.find((invoice) => invoice.status === "draft");
+  if (draftInvoice) return {
+    type: "invoice",
+    id: draftInvoice.id,
+    eyebrow: "Payment workflow",
+    title: `Send Invoice #${draftInvoice.invoice_number}`,
+    text: `The job is complete and ${money(draftInvoice.total)} is ready to invoice.`,
+    button: "Open invoice",
+  };
+
+  const collectInvoice = invoices.find((invoice) => ["sent", "partially_paid", "overdue"].includes(invoice.status) && Number(invoice.amount_due || 0) > 0);
+  if (collectInvoice) return {
+    type: "invoice",
+    id: collectInvoice.id,
+    eyebrow: collectInvoice.status === "overdue" ? "Needs attention" : "Payment workflow",
+    title: collectInvoice.status === "overdue" ? `Follow up on Invoice #${collectInvoice.invoice_number}` : `Collect payment on Invoice #${collectInvoice.invoice_number}`,
+    text: `${money(collectInvoice.amount_due)} is still outstanding.`,
+    button: "Open invoice",
+  };
+
+  const inProgress = jobs.find((job) => job.status === "in_progress");
+  if (inProgress) return {
+    type: "job",
+    id: inProgress.id,
+    eyebrow: "Job in progress",
+    title: `Finish Job #${inProgress.job_number}`,
+    text: "Record the final total and completion notes, then create the invoice.",
+    button: "Continue job",
+  };
+
+  const onMyWay = jobs.find((job) => job.status === "on_my_way");
+  if (onMyWay) return {
+    type: "job",
+    id: onMyWay.id,
+    eyebrow: "Field workflow",
+    title: `Start Job #${onMyWay.job_number}`,
+    text: "You already marked yourself on the way. Open the job when you arrive.",
+    button: "Continue job",
+  };
+
+  const scheduled = jobs.find((job) => job.status === "scheduled");
+  if (scheduled) return {
+    type: "job",
+    id: scheduled.id,
+    eyebrow: "Upcoming job",
+    title: `Job #${scheduled.job_number} is scheduled`,
+    text: scheduled.scheduled_start ? `Next service: ${formatDate(scheduled.scheduled_start, true)}.` : "The job is ready for field work.",
+    button: "Open job",
+  };
+
+  const unscheduled = jobs.find((job) => job.status === "unscheduled");
+  if (unscheduled) return {
+    type: "job",
+    id: unscheduled.id,
+    eyebrow: "Needs scheduling",
+    title: `Schedule Job #${unscheduled.job_number}`,
+    text: "The customer approved the quote. Pick a service date and arrival window.",
+    button: "Schedule job",
+  };
+
+  const changesQuote = quotes.find((quote) => quote.status === "changes_requested");
+  if (changesQuote) return {
+    type: "quote",
+    id: changesQuote.id,
+    eyebrow: "Quote needs changes",
+    title: `Update Quote #${changesQuote.quote_number}`,
+    text: "The customer requested changes. Review the quote and send the revision.",
+    button: "Open quote",
+  };
+
+  const openQuote = quotes.find((quote) => ["sent", "viewed"].includes(quote.status));
+  if (openQuote) return {
+    type: "quote",
+    id: openQuote.id,
+    eyebrow: "Waiting on customer",
+    title: `Follow up on Quote #${openQuote.quote_number}`,
+    text: openQuote.status === "viewed" ? "The customer has viewed the quote but has not approved it yet." : "The quote has been sent and is waiting for the customer.",
+    button: "Open quote",
+  };
+
+  const activeLead = leads.find((lead) => ["new", "contacted", "qualified", "quote_needed"].includes(lead.status));
+  if (activeLead) return {
+    type: "lead",
+    lead: activeLead,
+    eyebrow: "Lead needs action",
+    title: activeLead.status === "new" ? "Create the next quote" : "Continue this lead",
+    text: `${activeLead.requested_service || "Service request"} is still open.`,
+    button: "Create quote",
+  };
+
+  return {
+    type: "done",
+    eyebrow: "Customer up to date",
+    title: "Nothing needs action right now",
+    text: "Completed work, invoices, and payment history are still available below.",
+    button: null,
+  };
+}
+
+function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, onOpenInvoice, onCreateQuote }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
@@ -97,6 +198,14 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
   const paidTotal = payments.filter((p) => p.status === "succeeded").reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const openBalance = invoices.reduce((sum, invoice) => sum + Number(invoice.amount_due || 0), 0);
   const primaryProperty = properties.find((property) => property.is_primary) || properties[0];
+  const nextAction = getNextAction({ leads, quotes, jobs, invoices });
+
+  function continueWorkflow() {
+    if (nextAction.type === "invoice") onOpenInvoice?.(nextAction.id);
+    if (nextAction.type === "job") onOpenJob?.(nextAction.id);
+    if (nextAction.type === "quote") onOpenQuote?.(nextAction.id);
+    if (nextAction.type === "lead") onCreateQuote?.({ ...nextAction.lead, customer });
+  }
 
   return (
     <div className="grid gap-6">
@@ -118,6 +227,21 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
           {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700"><Mail className="h-4 w-4" /> Email</a>}
         </div>
       </div>
+
+      <section className={`rounded-2xl border p-5 shadow-sm ${nextAction.type === "done" ? "border-emerald-200 bg-emerald-50" : "border-cyan-200 bg-cyan-50"}`}>
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <p className={`text-xs font-black uppercase tracking-[.16em] ${nextAction.type === "done" ? "text-emerald-700" : "text-cyan-700"}`}>{nextAction.eyebrow}</p>
+            <h3 className="mt-2 text-xl font-black text-slate-950">{nextAction.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{nextAction.text}</p>
+          </div>
+          {nextAction.button && (
+            <button type="button" onClick={continueWorkflow} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#08243f] px-5 py-3.5 text-sm font-black text-white transition hover:bg-slate-800">
+              {nextAction.button} <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </section>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
@@ -234,6 +358,7 @@ export default function CustomerPage({
   onOpenQuote,
   onOpenJob,
   onOpenInvoice,
+  onCreateQuote,
 }) {
   const [rows, setRows] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -266,6 +391,7 @@ export default function CustomerPage({
         onOpenQuote={onOpenQuote}
         onOpenJob={onOpenJob}
         onOpenInvoice={onOpenInvoice}
+        onCreateQuote={onCreateQuote}
       />
     );
   }
