@@ -390,7 +390,11 @@ function QuoteForm() {
       name: data.name || "",
       phone: data.phone || "",
       email: data.email || "",
+      addressLine1: data.addressLine1 || "",
       city: data.city || "",
+      state: data.state || "TX",
+      postalCode: data.postalCode || "",
+      smsConsent: data.smsConsent === "yes",
       service: data.service || "",
       message: data.message || "",
       package: data.package || "",
@@ -471,24 +475,35 @@ function QuoteForm() {
             <ValidationError field="email" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
           </div>
         </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
+        <div>
+          <label htmlFor="quote-address" className="mb-2 block text-sm font-black text-slate-700">Service address</label>
+          <input id="quote-address" name="addressLine1" autoComplete="address-line1" required placeholder="123 Main St" className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+          <ValidationError field="addressLine1" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+        </div>
+        <input type="hidden" name="state" value="TX" />
+        <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]">
+          <div className="min-w-0">
             <label htmlFor="quote-city" className="mb-2 block text-sm font-black text-slate-700">City</label>
-            <input id="quote-city" name="city" autoComplete="address-level2" required placeholder="Allen, McKinney, Plano..." className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+            <input id="quote-city" name="city" autoComplete="address-level2" required placeholder="Allen, McKinney, Plano..." className="w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
             <ValidationError field="city" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
           </div>
-          <div>
-            <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">Service needed</label>
-            <select id="quote-service" name="service" defaultValue={selectedPackage ? "Driveway / concrete cleaning" : ""} required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
-              <option value="">Choose a service</option>
-              <option>Driveway / concrete cleaning</option>
-              <option>Sidewalk / walkway cleaning</option>
-              <option>Patio / outdoor surface cleaning</option>
-              <option>Commercial concrete cleaning</option>
-              <option>Not sure yet</option>
-            </select>
-            <ValidationError field="service" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
+          <div className="min-w-0">
+            <label htmlFor="quote-zip" className="mb-2 block text-sm font-black text-slate-700">ZIP</label>
+            <input id="quote-zip" name="postalCode" inputMode="numeric" autoComplete="postal-code" required pattern="[0-9]{5}(-[0-9]{4})?" placeholder="75013" className="w-full min-w-0 rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+            <ValidationError field="postalCode" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
           </div>
+        </div>
+        <div>
+          <label htmlFor="quote-service" className="mb-2 block text-sm font-black text-slate-700">Service needed</label>
+          <select id="quote-service" name="service" defaultValue={selectedPackage ? "Driveway / concrete cleaning" : ""} required className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">
+            <option value="">Choose a service</option>
+            <option>Driveway / concrete cleaning</option>
+            <option>Sidewalk / walkway cleaning</option>
+            <option>Patio / outdoor surface cleaning</option>
+            <option>Commercial concrete cleaning</option>
+            <option>Not sure yet</option>
+          </select>
+          <ValidationError field="service" errors={state.errors} className="mt-2 block text-sm font-bold text-red-600" />
         </div>
         <div>
           <label htmlFor="quote-details" className="mb-2 block text-sm font-black text-slate-700">Project details</label>
@@ -500,6 +515,10 @@ function QuoteForm() {
         </button>
         <div role="alert"><ValidationError errors={state.errors} className="text-sm font-bold text-red-600" />
         {state.errors && <p className="mt-2 text-sm text-slate-600">Having trouble? <a href={business.smsLink} className="font-bold underline">Text us your request</a> or call {business.phone}.</p>}</div>
+        <label className="flex items-start gap-3 rounded-lg bg-slate-50 p-4 text-xs leading-5 text-slate-600">
+          <input type="checkbox" name="smsConsent" value="yes" className="mt-1 h-4 w-4 shrink-0 accent-cyan-600" />
+          <span>I agree to receive text messages from RinsePoint about this quote request and related service updates. Message and data rates may apply. Reply STOP to opt out.</span>
+        </label>
         <p className="text-xs leading-5 text-slate-500">
           By submitting, you agree that RinsePoint may contact you about this request. See our <a href="/privacy.html" className="font-bold text-cyan-700 hover:underline">Privacy Policy</a>.
         </p>
