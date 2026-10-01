@@ -385,7 +385,7 @@ function QuoteForm() {
   const requestedPackage = new URLSearchParams(window.location.search).get("package");
   const selectedPackage = packages.find((pkg) => pkg.name === requestedPackage);
   const successHeading = useRef(null);
-  const requestId = useRef(globalThis.crypto?.randomUUID?.() || `web-${Date.now()}`);
+  const requestId = useRef(null);
   const [submitState, setSubmitState] = useState({ status: "idle", error: "" });
   const submitting = submitState.status === "submitting";
   const succeeded = submitState.status === "succeeded";
@@ -395,6 +395,10 @@ function QuoteForm() {
     if (submitting) return;
 
     setSubmitState({ status: "submitting", error: "" });
+
+    if (!requestId.current) {
+      requestId.current = globalThis.crypto?.randomUUID?.() || `web-${Date.now()}`;
+    }
 
     const formData = new FormData(event.currentTarget);
     const payload = buildLeadIntakePayload(formData, {
