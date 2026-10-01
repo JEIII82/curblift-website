@@ -16,6 +16,7 @@ import {
 import QuotePage from "./QuotePage.jsx";
 import JobPage from "./JobPage.jsx";
 import InvoicePage from "./InvoicePage.jsx";
+import CustomerPage from "./CustomerPage.jsx";
 import {
   claimOwner,
   getAppointments,
@@ -183,32 +184,32 @@ function PageHeader({ title, eyebrow, onMenu }) {
   );
 }
 
-function Dashboard({ session }) {
+function Dashboard({ session, onOpenCustomer, onNavigate }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   useEffect(() => { getDashboard(session).then(setData).catch((e) => setError(e.message)); }, [session]);
   if (error) return <EmptyState title="Dashboard couldn't load" text={error} />;
   if (!data) return <p className="text-sm font-bold text-slate-500">Loading dashboard…</p>;
   const cards = [
-    ["New leads", data.newLeads, "Needs attention"],
-    ["Open quotes", data.openQuotes, "Waiting on customers"],
-    ["Active jobs", data.scheduledJobs, "Scheduled or underway"],
-    ["Unpaid invoices", data.unpaidInvoices, "Needs collection"],
+    ["New leads", data.newLeads, "Needs attention", "leads"],
+    ["Open quotes", data.openQuotes, "Waiting on customers", "quotes"],
+    ["Active jobs", data.scheduledJobs, "Scheduled or underway", "jobs"],
+    ["Unpaid invoices", data.unpaidInvoices, "Needs collection", "invoices"],
   ];
   return (
     <div className="grid gap-7">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(([label, value, note]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{label}</p><p className="mt-3 text-4xl font-black text-slate-950">{value}</p><p className="mt-2 text-sm text-slate-500">{note}</p></div>)}
+        {cards.map(([label, value, note, destination]) => <button type="button" key={label} onClick={() => onNavigate?.(destination)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500"><p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{label}</p><p className="mt-3 text-4xl font-black text-slate-950">{value}</p><p className="mt-2 text-sm text-slate-500">{note}</p></button>)}
       </div>
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 p-5"><div><h2 className="font-black text-slate-950">Recent leads</h2><p className="mt-1 text-sm text-slate-500">Newest requests entering RinsePoint.</p></div></div>
-        {data.recentLeads.length ? <div className="divide-y divide-slate-100">{data.recentLeads.map((lead) => <div key={lead.id} className="flex items-center justify-between gap-4 p-5"><div><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "New customer"}</p><p className="mt-1 text-sm text-slate-500">{lead.requested_service || "Service not set"} · {lead.service_city || "Location pending"}</p></div><div className="flex items-center gap-3"><StatusBadge>{statusLabel[lead.status] || lead.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div></div>)}</div> : <div className="p-6"><EmptyState title="No leads yet" text="Your next website quote request will appear here automatically." /></div>}
+        {data.recentLeads.length ? <div className="divide-y divide-slate-100">{data.recentLeads.map((lead) => <button type="button" key={lead.id} onClick={() => onOpenCustomer?.(lead.customer?.id)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><div><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "New customer"}</p><p className="mt-1 text-sm text-slate-500">{lead.requested_service || "Service not set"} · {lead.service_city || "Location pending"}</p></div><div className="flex items-center gap-3"><StatusBadge>{statusLabel[lead.status] || lead.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div></button>)}</div> : <div className="p-6"><EmptyState title="No leads yet" text="Your next website quote request will appear here automatically." /></div>}
       </section>
     </div>
   );
 }
 
-function Leads({ session, onCreateQuote }) {
+function Leads({ session, onCreateQuote, onOpenCustomer }) {
   const [rows, setRows] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -233,7 +234,7 @@ function Leads({ session, onCreateQuote }) {
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="min-w-[900px] w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Service</th><th className="px-5 py-4">City</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Received</th><th className="px-5 py-4"></th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => <tr key={lead.id} className="hover:bg-slate-50/70"><td className="px-5 py-4"><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.submitted_email || lead.submitted_phone || lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td><td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td><td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td><td className="px-5 py-4"><select value={lead.status} onChange={(e) => changeStatus(lead.id, e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700">{Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td><td className="px-5 py-4 text-right"><button onClick={() => onCreateQuote(lead)} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Create quote</button></td></tr>)}</tbody>
+            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => <tr key={lead.id} role="button" tabIndex={0} onClick={() => onOpenCustomer?.(lead.customer?.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onOpenCustomer?.(lead.customer?.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><td className="px-5 py-4"><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.submitted_email || lead.submitted_phone || lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td><td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td><td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td><td className="px-5 py-4"><select value={lead.status} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.stopPropagation(); changeStatus(lead.id, e.target.value); }} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700">{Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td><td className="px-5 py-4 text-right"><button onClick={(e) => { e.stopPropagation(); onCreateQuote(lead); }} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Create quote</button></td></tr>)}</tbody>
           </table>
         </div>
       ) : <EmptyState title="No matching leads" text="Try a different search, or wait for the next website request." />}
@@ -330,6 +331,10 @@ export default function CrmApp() {
   const [active, setActive] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
   const [quoteLead, setQuoteLead] = useState(null);
+  const [customerId, setCustomerId] = useState(null);
+  const [quoteId, setQuoteId] = useState(null);
+  const [jobId, setJobId] = useState(null);
+  const [invoiceId, setInvoiceId] = useState(null);
   const [booting, setBooting] = useState(Boolean(session));
   const [bootError, setBootError] = useState("");
 
@@ -377,6 +382,52 @@ export default function CrmApp() {
     setSession(null);
   }
 
+  function navigateSection(id) {
+    setActive(id);
+    setQuoteLead(null);
+    setCustomerId(null);
+    setQuoteId(null);
+    setJobId(null);
+    setInvoiceId(null);
+  }
+
+  function openCustomer(id) {
+    if (!id) return;
+    setQuoteLead(null);
+    setQuoteId(null);
+    setJobId(null);
+    setInvoiceId(null);
+    setCustomerId(id);
+    setActive("customers");
+  }
+
+  function openQuote(id) {
+    if (!id) return;
+    setCustomerId(null);
+    setJobId(null);
+    setInvoiceId(null);
+    setQuoteId(id);
+    setActive("quotes");
+  }
+
+  function openJob(id) {
+    if (!id) return;
+    setCustomerId(null);
+    setQuoteId(null);
+    setInvoiceId(null);
+    setJobId(id);
+    setActive("jobs");
+  }
+
+  function openInvoice(id) {
+    if (!id) return;
+    setCustomerId(null);
+    setQuoteId(null);
+    setJobId(null);
+    setInvoiceId(id);
+    setActive("invoices");
+  }
+
   if (!session) return <Login onSession={setSession} />;
   if (booting) return <main className="grid min-h-screen place-items-center bg-slate-50"><p className="font-black text-slate-500">Opening RinsePoint OS…</p></main>;
   if (bootError) return <main className="grid min-h-screen place-items-center bg-slate-50 p-5"><div className="max-w-lg rounded-2xl border border-red-200 bg-white p-8 shadow-sm"><h1 className="text-2xl font-black text-slate-950">Access needs attention</h1><p className="mt-3 leading-7 text-slate-600">{bootError}</p><button onClick={logout} className="mt-6 rounded-xl bg-slate-950 px-5 py-3 font-black text-white">Sign out</button></div></main>;
@@ -384,17 +435,17 @@ export default function CrmApp() {
   const titles = Object.fromEntries(sections.map(([id, label]) => [id, label]));
   return (
     <div className="min-h-screen bg-[#f4f7f9] text-slate-950">
-      <Sidebar active={active} setActive={setActive} open={menuOpen} setOpen={setMenuOpen} logout={logout} />
+      <Sidebar active={active} setActive={navigateSection} open={menuOpen} setOpen={setMenuOpen} logout={logout} />
       <div className="lg:pl-72">
         <PageHeader title={titles[active]} eyebrow="RinsePoint OS" onMenu={() => setMenuOpen(true)} />
         <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
-          {active === "dashboard" && <Dashboard session={session} />}
-          {active === "leads" && <Leads session={session} onCreateQuote={(lead) => { setQuoteLead(lead); setActive("quotes"); }} />}
-          {active === "customers" && <DataPage session={session} loader={getCustomers} type="Customers" />}
-          {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} onInitialLeadHandled={() => setQuoteLead(null)} />}
-          {active === "jobs" && <JobPage session={session} />}
+          {active === "dashboard" && <Dashboard session={session} onOpenCustomer={openCustomer} onNavigate={navigateSection} />}
+          {active === "leads" && <Leads session={session} onOpenCustomer={openCustomer} onCreateQuote={(lead) => { setCustomerId(null); setQuoteId(null); setQuoteLead(lead); setActive("quotes"); }} />}
+          {active === "customers" && <CustomerPage session={session} initialCustomerId={customerId} onInitialCustomerHandled={() => setCustomerId(null)} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} />}
+          {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} initialQuoteId={quoteId} onInitialLeadHandled={() => setQuoteLead(null)} onInitialQuoteHandled={() => setQuoteId(null)} onOpenCustomer={openCustomer} />}
+          {active === "jobs" && <JobPage session={session} initialJobId={jobId} onInitialJobHandled={() => setJobId(null)} onOpenCustomer={openCustomer} />}
           {active === "calendar" && <DataPage session={session} loader={getAppointments} type="Calendar" />}
-          {active === "invoices" && <InvoicePage session={session} />}
+          {active === "invoices" && <InvoicePage session={session} initialInvoiceId={invoiceId} onInitialInvoiceHandled={() => setInvoiceId(null)} onOpenCustomer={openCustomer} />}
           {active === "services" && <DataPage session={session} loader={getServices} type="Pricebook" />}
         </main>
       </div>
