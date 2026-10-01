@@ -17,10 +17,10 @@ import QuotePage from "./QuotePage.jsx";
 import JobPage from "./JobPage.jsx";
 import InvoicePage from "./InvoicePage.jsx";
 import CustomerPage from "./CustomerPage.jsx";
+import CalendarPage from "./CalendarPage.jsx";
 import {
   claimOwner,
-  getAppointments,
-  getCustomers,
+   getCustomers,
   getDashboard,
   getLeads,
   getServices,
@@ -454,7 +454,7 @@ export default function CrmApp() {
           {active === "customers" && <CustomerPage session={session} initialCustomerId={customerId} onInitialCustomerHandled={() => setCustomerId(null)} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} onCreateQuote={createQuoteFromLead} />}
           {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} initialQuoteId={quoteId} onInitialLeadHandled={() => setQuoteLead(null)} onInitialQuoteHandled={() => setQuoteId(null)} onOpenCustomer={openCustomer} />}
           {active === "jobs" && <JobPage session={session} initialJobId={jobId} onInitialJobHandled={() => setJobId(null)} onOpenCustomer={openCustomer} />}
-          {active === "calendar" && <DataPage session={session} loader={getAppointments} type="Calendar" />}
+          {active === "calendar" && <CalendarPage session={session} onOpenJob={openJob} />}
           {active === "invoices" && <InvoicePage session={session} initialInvoiceId={invoiceId} onInitialInvoiceHandled={() => setInvoiceId(null)} onOpenCustomer={openCustomer} />}
           {active === "services" && <DataPage session={session} loader={getServices} type="Pricebook" />}
         </main>
