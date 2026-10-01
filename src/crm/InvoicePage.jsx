@@ -39,7 +39,7 @@ function publicLink(token) {
   return `${window.location.origin}/invoice/?token=${token}`;
 }
 
-function InvoiceDetail({ session, invoiceId, onBack }) {
+function InvoiceDetail({ session, invoiceId, onBack, onOpenCustomer }) {
   const [invoice, setInvoice] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -101,8 +101,8 @@ function InvoiceDetail({ session, invoiceId, onBack }) {
             <div className="grid gap-5 md:grid-cols-2">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Bill to</p>
-                <p className="mt-2 font-black text-slate-900">{invoice.customer?.display_name}</p>
-                <p className="mt-1 text-sm text-slate-500">{invoice.customer?.email || "No email"}</p>
+                <button type="button" onClick={() => onOpenCustomer?.(invoice.customer?.id)} className="mt-2 text-left font-black text-slate-900 hover:text-cyan-800">{invoice.job?.lead?.submitted_name || invoice.customer?.display_name}</button>
+                <p className="mt-1 text-sm text-slate-500">{invoice.job?.lead?.submitted_email || invoice.customer?.email || "No email"}</p>
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Service address</p>
@@ -192,7 +192,7 @@ function InvoiceDetail({ session, invoiceId, onBack }) {
   );
 }
 
-export default function InvoicePage({ session }) {
+export default function InvoicePage({ session, initialInvoiceId, onInitialInvoiceHandled, onOpenCustomer }) {
   const [rows, setRows] = useState(null);
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState("");
@@ -201,7 +201,13 @@ export default function InvoicePage({ session }) {
     getInvoices(session).then(setRows).catch((err) => setError(err.message));
   }, [session, selected]);
 
-  if (selected) return <InvoiceDetail session={session} invoiceId={selected} onBack={() => setSelected(null)} />;
+  useEffect(() => {
+    if (!initialInvoiceId) return;
+    setSelected(initialInvoiceId);
+    onInitialInvoiceHandled?.();
+  }, [initialInvoiceId, onInitialInvoiceHandled]);
+
+  if (selected) return <InvoiceDetail session={session} invoiceId={selected} onBack={() => setSelected(null)} onOpenCustomer={onOpenCustomer} />;
   if (error) return <div className="rounded-2xl border border-red-200 bg-red-50 p-5 font-bold text-red-700">{error}</div>;
   if (!rows) return <p className="text-sm font-bold text-slate-500">Loading invoices…</p>;
 
@@ -215,13 +221,13 @@ export default function InvoicePage({ session }) {
         <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Invoice</th><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Total</th><th className="px-5 py-4">Due</th><th className="px-5 py-4"></th></tr></thead>
         <tbody className="divide-y divide-slate-100">
           {rows.map((invoice) => (
-            <tr key={invoice.id} className="hover:bg-slate-50/70">
+            <tr key={invoice.id} role="button" tabIndex={0} onClick={() => setSelected(invoice.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelected(invoice.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none">
               <td className="px-5 py-4"><p className="font-black text-slate-900">#{invoice.invoice_number}</p><p className="mt-1 text-xs text-slate-500">{invoice.job?.title || "RinsePoint service"}</p></td>
-              <td className="px-5 py-4"><p className="font-bold text-slate-800">{invoice.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{invoice.customer?.email || "—"}</p></td>
+              <td className="px-5 py-4"><button type="button" onClick={(event) => { event.stopPropagation(); onOpenCustomer?.(invoice.customer?.id); }} className="text-left hover:text-cyan-800"><p className="font-bold text-slate-800">{invoice.job?.lead?.submitted_name || invoice.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{invoice.job?.lead?.submitted_email || invoice.customer?.email || "—"}</p></button></td>
               <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-black ${badgeClass(invoice.status)}`}>{statusLabel(invoice.status)}</span></td>
               <td className="px-5 py-4 font-black text-slate-900">{money(invoice.total)}</td>
               <td className="px-5 py-4"><p className="font-black text-slate-800">{money(invoice.amount_due)}</p><p className="mt-1 text-xs text-slate-500">{formatDate(invoice.due_at)}</p></td>
-              <td className="px-5 py-4 text-right"><button onClick={() => setSelected(invoice.id)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open</button></td>
+              <td className="px-5 py-4 text-right"><button onClick={(event) => { event.stopPropagation(); setSelected(invoice.id); }} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open</button></td>
             </tr>
           ))}
         </tbody>
