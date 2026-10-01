@@ -184,25 +184,81 @@ function PageHeader({ title, eyebrow, onMenu }) {
   );
 }
 
-function Dashboard({ session, onOpenCustomer, onNavigate }) {
+function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob, onOpenInvoice }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+
   useEffect(() => { getDashboard(session).then(setData).catch((e) => setError(e.message)); }, [session]);
+
   if (error) return <EmptyState title="Dashboard couldn't load" text={error} />;
   if (!data) return <p className="text-sm font-bold text-slate-500">Loading dashboard…</p>;
+
   const cards = [
-    ["New leads", data.newLeads, "Needs attention", "leads"],
-    ["Open quotes", data.openQuotes, "Waiting on customers", "quotes"],
-    ["Active jobs", data.scheduledJobs, "Scheduled or underway", "jobs"],
+    ["New leads", data.newLeads, "Needs a response", "leads"],
+    ["Open quotes", data.openQuotes, "Waiting on approval", "quotes"],
+    ["Active jobs", data.activeJobs, "Scheduled or underway", "jobs"],
     ["Unpaid invoices", data.unpaidInvoices, "Needs collection", "invoices"],
   ];
+
+  const needsAttention = [
+    ...data.actionJobs.filter((job) => job.status === "unscheduled").map((job) => ({ kind: "job", id: job.id, title: `Schedule Job #${job.job_number}`, detail: job.lead?.submitted_name || job.customer?.display_name || job.title, status: "Needs scheduling" })),
+    ...data.actionInvoices.filter((invoice) => invoice.status === "draft").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Send Invoice #${invoice.invoice_number}`, detail: `${invoice.job?.lead?.submitted_name || invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.total)}`, status: "Draft" })),
+    ...data.actionInvoices.filter((invoice) => invoice.status === "overdue").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Invoice #${invoice.invoice_number} overdue`, detail: `${invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.amount_due)} due`, status: "Overdue" })),
+    ...data.actionQuotes.filter((quote) => quote.status === "changes_requested").map((quote) => ({ kind: "quote", id: quote.id, title: `Revise Quote #${quote.quote_number}`, detail: quote.lead?.submitted_name || quote.customer?.display_name || quote.title, status: "Changes requested" })),
+  ].slice(0, 7);
+
+  function openAction(action) {
+    if (action.kind === "job") onOpenJob?.(action.id);
+    if (action.kind === "invoice") onOpenInvoice?.(action.id);
+    if (action.kind === "quote") onOpenQuote?.(action.id);
+  }
+
   return (
-    <div className="grid gap-7">
+    <div className="grid gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(([label, value, note, destination]) => <button type="button" key={label} onClick={() => onNavigate?.(destination)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500"><p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{label}</p><p className="mt-3 text-4xl font-black text-slate-950">{value}</p><p className="mt-2 text-sm text-slate-500">{note}</p></button>)}
+        {cards.map(([label, value, note, destination]) => (
+          <button type="button" key={label} onClick={() => onNavigate?.(destination)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{label}</p>
+            <p className="mt-3 text-4xl font-black text-slate-950">{value}</p>
+            <p className="mt-2 text-sm text-slate-500">{note}</p>
+          </button>
+        ))}
       </div>
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 p-5"><div><h2 className="font-black text-slate-950">Recent leads</h2><p className="mt-1 text-sm text-slate-500">Newest requests entering RinsePoint.</p></div></div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 p-5">
+            <div><p className="text-xs font-black uppercase tracking-[.14em] text-cyan-700">Today</p><h2 className="mt-1 font-black text-slate-950">Schedule</h2><p className="mt-1 text-sm text-slate-500">Jobs and appointments on today's calendar.</p></div>
+            <button onClick={() => onNavigate?.("calendar")} className="text-sm font-black text-cyan-800">Full schedule →</button>
+          </div>
+          {data.todayAppointments.length ? <div className="divide-y divide-slate-100">{data.todayAppointments.map((appointment) => (
+            <button key={appointment.id} type="button" onClick={() => appointment.job?.id && onOpenJob?.(appointment.job.id)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{appointment.job ? `Job #${appointment.job.job_number} · ${appointment.job.title}` : "Appointment"}</p><StatusBadge>{appointment.job?.status?.replaceAll("_"," ") || appointment.status}</StatusBadge></div>
+                <p className="mt-1 text-sm text-slate-500">{formatDate(appointment.starts_at, true)} · {appointment.customer?.display_name || "Customer"}{appointment.property ? ` · ${appointment.property.address_line1}` : ""}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+            </button>
+          ))}</div> : <div className="p-8 text-center"><CalendarDays className="mx-auto h-7 w-7 text-slate-300" /><p className="mt-3 font-black text-slate-800">Nothing scheduled today</p><p className="mt-1 text-sm text-slate-500">Use Calendar to schedule approved work.</p></div>}
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 p-5">
+            <p className="text-xs font-black uppercase tracking-[.14em] text-amber-700">Work queue</p>
+            <h2 className="mt-1 font-black text-slate-950">Needs attention</h2>
+            <p className="mt-1 text-sm text-slate-500">Operational items that should be handled next.</p>
+          </div>
+          {needsAttention.length ? <div className="divide-y divide-slate-100">{needsAttention.map((action) => (
+            <button key={`${action.kind}-${action.id}`} onClick={() => openAction(action)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50">
+              <div><p className="font-black text-slate-900">{action.title}</p><p className="mt-1 text-sm text-slate-500">{action.detail}</p></div>
+              <div className="flex shrink-0 items-center gap-2"><StatusBadge>{action.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div>
+            </button>
+          ))}</div> : <div className="p-8 text-center"><p className="font-black text-slate-800">You're caught up</p><p className="mt-1 text-sm text-slate-500">No draft invoices, unscheduled jobs, overdue balances, or quote revisions need action.</p></div>}
+        </section>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-black text-slate-950">Recent requests</h2><p className="mt-1 text-sm text-slate-500">Latest customer requests, including completed history.</p></div><button onClick={() => onNavigate?.("leads")} className="text-sm font-black text-cyan-800">View all →</button></div>
         {data.recentLeads.length ? <div className="divide-y divide-slate-100">{data.recentLeads.map((lead) => <button type="button" key={lead.id} onClick={() => onOpenCustomer?.(lead.customer?.id)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><div><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "New customer"}</p><p className="mt-1 text-sm text-slate-500">{lead.requested_service || "Service not set"} · {lead.service_city || "Location pending"}</p></div><div className="flex items-center gap-3"><StatusBadge>{statusLabel[lead.status] || lead.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div></button>)}</div> : <div className="p-6"><EmptyState title="No leads yet" text="Your next website quote request will appear here automatically." /></div>}
       </section>
     </div>
@@ -449,7 +505,7 @@ export default function CrmApp() {
       <div className="lg:pl-72">
         <PageHeader title={titles[active]} eyebrow="RinsePoint OS" onMenu={() => setMenuOpen(true)} />
         <main className="mx-auto max-w-[1500px] p-5 lg:p-8">
-          {active === "dashboard" && <Dashboard session={session} onOpenCustomer={openCustomer} onNavigate={navigateSection} />}
+          {active === "dashboard" && <Dashboard session={session} onOpenCustomer={openCustomer} onNavigate={navigateSection} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} />}
           {active === "leads" && <Leads session={session} onOpenCustomer={openCustomer} onCreateQuote={createQuoteFromLead} />}
           {active === "customers" && <CustomerPage session={session} initialCustomerId={customerId} onInitialCustomerHandled={() => setCustomerId(null)} onOpenQuote={openQuote} onOpenJob={openJob} onOpenInvoice={openInvoice} onCreateQuote={createQuoteFromLead} />}
           {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} initialQuoteId={quoteId} onInitialLeadHandled={() => setQuoteLead(null)} onInitialQuoteHandled={() => setQuoteId(null)} onOpenCustomer={openCustomer} />}
