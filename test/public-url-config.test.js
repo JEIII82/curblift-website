@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const quoteAdmin = readFileSync(new URL("../supabase/functions/quote-admin/index.ts", import.meta.url), "utf8");
 const invoiceAdmin = readFileSync(new URL("../supabase/functions/invoice-admin/index.ts", import.meta.url), "utf8");
 const invoiceCheckout = readFileSync(new URL("../supabase/functions/invoice-checkout/index.ts", import.meta.url), "utf8");
-const migration = readFileSync(new URL("../supabase/migrations/20261001225000_public_base_url.sql", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/20261001225207_public_base_url.sql", import.meta.url), "utf8");
 
 test("customer quote and invoice links use centralized public_base_url", () => {
   assert.match(quoteAdmin, /select\("public_base_url"\)/);
