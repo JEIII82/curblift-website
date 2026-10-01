@@ -15,12 +15,12 @@ import {
 } from "lucide-react";
 import QuotePage from "./QuotePage.jsx";
 import JobPage from "./JobPage.jsx";
+import InvoicePage from "./InvoicePage.jsx";
 import {
   claimOwner,
   getAppointments,
   getCustomers,
   getDashboard,
-  getInvoices,
   getLeads,
   getServices,
   getStoredSession,
@@ -379,7 +379,7 @@ export default function CrmApp() {
           {active === "quotes" && <QuotePage session={session} initialLead={quoteLead} onInitialLeadHandled={() => setQuoteLead(null)} />}
           {active === "jobs" && <JobPage session={session} />}
           {active === "calendar" && <DataPage session={session} loader={getAppointments} type="Calendar" />}
-          {active === "invoices" && <DataPage session={session} loader={getInvoices} type="Invoices" />}
+          {active === "invoices" && <InvoicePage session={session} />}
           {active === "services" && <DataPage session={session} loader={getServices} type="Pricebook" />}
         </main>
       </div>
