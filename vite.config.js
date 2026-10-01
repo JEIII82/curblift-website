@@ -18,6 +18,7 @@ export default defineConfig({
         areas: resolve(__dirname, 'areas/index.html'),
         contact: resolve(__dirname, 'contact/index.html'),
         app: resolve(__dirname, 'app/index.html'),
+        quote: resolve(__dirname, 'quote/index.html'),
       },
     },
   },
