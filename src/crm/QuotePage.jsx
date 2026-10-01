@@ -426,7 +426,14 @@ export default function QuotePage({ session, initialLead, onInitialLeadHandled }
               <tr key={quote.id} className="hover:bg-slate-50/70">
                 <td className="px-5 py-4"><p className="font-black text-slate-900">#{quote.quote_number}</p><p className="mt-1 text-xs text-slate-500">{quote.title || "Exterior Cleaning"}</p></td>
                 <td className="px-5 py-4"><p className="font-bold text-slate-800">{quote.lead?.submitted_name || quote.customer?.display_name || "—"}</p><p className="mt-1 text-xs text-slate-500">{quote.property ? `${quote.property.address_line1}, ${quote.property.city}` : "Address pending"}</p></td>
-                <td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{statusLabel(quote.status)}</span></td>
+                <td className="px-5 py-4">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{statusLabel(quote.status)}</span>
+                  {quote.jobs?.[0] && (
+                    <p className="mt-2 text-xs font-bold text-slate-500">
+                      Job #{quote.jobs[0].job_number} · {quote.jobs[0].status === "completed" ? "Completed" : quote.jobs[0].status === "in_progress" ? "In progress" : quote.jobs[0].status === "on_my_way" ? "On my way" : quote.jobs[0].status === "scheduled" ? "Scheduled" : quote.jobs[0].status === "unscheduled" ? "Unscheduled" : quote.jobs[0].status}
+                    </p>
+                  )}
+                </td>
                 <td className="px-5 py-4 font-black text-slate-900">{money(quote.total)}</td>
                 <td className="px-5 py-4 text-slate-500">{quote.expires_at ? new Date(quote.expires_at).toLocaleDateString() : "—"}</td>
                 <td className="px-5 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => setBuilder({ lead: null, quoteId: quote.id })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black text-slate-700">Open</button>{quote.public_token && quote.status !== "draft" && <button onClick={() => navigator.clipboard.writeText(publicLink(quote.public_token))} title="Copy customer link" className="rounded-lg border border-slate-300 p-2 text-slate-600"><Copy className="h-4 w-4" /></button>}</div></td>
