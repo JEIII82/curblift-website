@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useForm, ValidationError } from "@formspree/react";
 import CrmApp from "./crm/CrmApp.jsx";
+import PublicQuotePage from "./quote/PublicQuotePage.jsx";
 import {
   ArrowRight,
   Building2,
@@ -846,6 +847,10 @@ function CurrentPage() {
 export default function App() {
   if (window.location.pathname === "/app" || window.location.pathname.startsWith("/app/")) {
     return <CrmApp />;
+  }
+
+  if (window.location.pathname === "/quote" || window.location.pathname.startsWith("/quote/")) {
+    return <PublicQuotePage />;
   }
 
   return (
