@@ -14,7 +14,7 @@ function headers(session, extra = {}) {
 
 async function readJson(response) {
   const text = await response.text();
-  let payload = null;
+  let payload;
   try {
     payload = text ? JSON.parse(text) : null;
   } catch {
