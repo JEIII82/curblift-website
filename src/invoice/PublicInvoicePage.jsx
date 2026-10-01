@@ -52,7 +52,11 @@ export default function PublicInvoicePage() {
             </div>
             <div className="ml-auto mt-4 max-w-sm border-t border-slate-200 pt-4">
               <div className="grid gap-2 text-sm">
-                <div className="flex justify-between text-slate-500"><span>Total</span><span>{money(invoice.total)}</span></div>
+                <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{money(invoice.subtotal)}</span></div>
+                {Number(invoice.discount_amount) > 0 && <div className="flex justify-between text-slate-500"><span>Discount</span><span>-{money(invoice.discount_amount)}</span></div>}
+                {Number(invoice.tax_amount) > 0 && <div className="flex justify-between text-slate-500"><span>Sales tax ({Number(invoice.tax_rate || 0).toFixed(2)}%)</span><span>{money(invoice.tax_amount)}</span></div>}
+                {invoice.tax_exempt && <div className="flex justify-between text-slate-500"><span>Sales tax</span><span>Exempt</span></div>}
+                <div className="flex justify-between border-t border-slate-200 pt-3 text-slate-700"><strong>Total</strong><strong>{money(invoice.total)}</strong></div>
                 <div className="flex justify-between text-slate-500"><span>Paid</span><span>{money(invoice.amount_paid)}</span></div>
                 <div className="flex justify-between border-t border-slate-200 pt-3 text-xl"><strong>Amount due</strong><strong>{money(invoice.amount_due)}</strong></div>
               </div>
