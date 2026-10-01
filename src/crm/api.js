@@ -205,7 +205,22 @@ export async function publicQuoteAction(token, action, data = {}) {
 }
 
 export function getJobs(session) {
-  return rest(session, `jobs?select=id,job_number,title,status,scheduled_start,scheduled_end,final_total,customer:customers(display_name),property:properties(address_line1,city,state)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `jobs?select=id,job_number,title,status,scheduled_start,scheduled_end,arrival_window_minutes,quoted_total,final_total,completed_at,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),quote:quotes(id,quote_number,total)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+}
+
+export function getJobDetails(session, jobId) {
+  return rest(session, `jobs?select=id,job_number,title,status,scope_of_work,internal_notes,completion_notes,scheduled_start,scheduled_end,arrival_window_minutes,actual_start,actual_end,quoted_total,final_total,completed_at,created_at,customer_id,property_id,quote_id,lead_id,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code),quote:quotes(id,quote_number,total),appointments(id,status,starts_at,ends_at,arrival_window_minutes)&organization_id=eq.${ORGANIZATION_ID}&id=eq.${encodeURIComponent(jobId)}&limit=1`, { method: "GET" }).then((rows) => rows?.[0] || null);
+}
+
+export async function jobAdmin(session, payload) {
+  const fresh = await ensureFreshSession(session);
+  if (!fresh) throw new Error("Your session expired. Please sign in again.");
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/job-admin`, {
+    method: "POST",
+    headers: headers(fresh, { "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  return readJson(response);
 }
 
 export function getAppointments(session) {
