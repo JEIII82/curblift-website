@@ -65,7 +65,7 @@ test("buildLeadIntakePayload creates the complete intake contract", () => {
     service: "Driveway / concrete cleaning",
     message: "Driveway and front walk",
     package: "Driveway + Front Walkway",
-    preferredContact: "sms",
+    preferredContact: "email",
     smsConsent: true,
     website: "",
     submittedAt: "2026-10-01T22:45:00.000Z",
