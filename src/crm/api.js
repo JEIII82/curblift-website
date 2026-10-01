@@ -154,13 +154,13 @@ export async function getDashboard(session) {
     countRows(session, "quotes", `${org}&status=in.(sent,viewed,changes_requested)`),
     countRows(session, "jobs", `${org}&status=in.(scheduled,on_my_way,in_progress)`),
     countRows(session, "invoices", `${org}&status=in.(sent,partially_paid,overdue)`),
-    rest(session, `leads?select=id,status,requested_service,service_city,created_at,customer:customers(display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
+    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
   ]);
   return { newLeads, openQuotes, scheduledJobs, unpaidInvoices, recentLeads };
 }
 
 export function getLeads(session) {
-  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getCustomers(session) {
