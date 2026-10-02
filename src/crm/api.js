@@ -175,7 +175,7 @@ export async function getDashboard(session) {
     countRows(session, "jobs", `${org}&status=eq.unscheduled`),
     countRows(session, "invoices", `${org}&status=eq.draft`),
     countRows(session, "invoices", `${org}&status=eq.overdue`),
-    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
+    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
     rest(session, `appointments?select=id,status,starts_at,ends_at,customer:customers(id,display_name),property:properties(address_line1,city,state),job:jobs(id,job_number,title,status)&${org}&starts_at=gte.${encodeURIComponent(today.toISOString())}&starts_at=lt.${encodeURIComponent(tomorrow.toISOString())}&order=starts_at.asc`, { method: "GET" }),
     rest(session, `quotes?select=id,quote_number,status,title,total,sent_at,viewed_at,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(sent,viewed,changes_requested)&order=updated_at.asc&limit=5`, { method: "GET" }),
     rest(session, `jobs?select=id,job_number,status,title,scheduled_start,quoted_total,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(unscheduled,scheduled,on_my_way,in_progress)&order=scheduled_start.asc.nullslast,created_at.asc&limit=6`, { method: "GET" }),
@@ -199,7 +199,7 @@ export async function getDashboard(session) {
 }
 
 export function getLeads(session) {
-  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,submitted_name,submitted_email,submitted_phone,created_at,customer:customers(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getCustomers(session) {
