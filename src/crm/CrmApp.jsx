@@ -200,6 +200,7 @@ function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob
   ];
 
   const needsAttention = [
+    ...data.recentLeads.filter((lead) => lead.status === "new").map((lead) => ({ kind: "lead", id: lead.id, customerId: lead.customer?.id, title: "Review new lead", detail: `${lead.submitted_name || lead.customer?.display_name || "New customer"} · ${lead.requested_service || "Service not set"}`, status: "New lead" })),
     ...data.actionJobs.filter((job) => job.status === "unscheduled").map((job) => ({ kind: "job", id: job.id, title: `Schedule Job #${job.job_number}`, detail: job.lead?.submitted_name || job.customer?.display_name || job.title, status: "Needs scheduling" })),
     ...data.actionInvoices.filter((invoice) => invoice.status === "draft").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Send Invoice #${invoice.invoice_number}`, detail: `${invoice.job?.lead?.submitted_name || invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.total)}`, status: "Draft" })),
     ...data.actionInvoices.filter((invoice) => invoice.status === "overdue").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Invoice #${invoice.invoice_number} overdue`, detail: `${invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.amount_due)} due`, status: "Overdue" })),
@@ -207,6 +208,10 @@ function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob
   ].slice(0, 7);
 
   function openAction(action) {
+    if (action.kind === "lead") {
+      if (action.customerId) onOpenCustomer?.(action.customerId);
+      else onNavigate?.("leads");
+    }
     if (action.kind === "job") onOpenJob?.(action.id);
     if (action.kind === "invoice") onOpenInvoice?.(action.id);
     if (action.kind === "quote") onOpenQuote?.(action.id);
@@ -252,7 +257,7 @@ function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob
               <div><p className="font-black text-slate-900">{action.title}</p><p className="mt-1 text-sm text-slate-500">{action.detail}</p></div>
               <div className="flex shrink-0 items-center gap-2"><StatusBadge>{action.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div>
             </button>
-          ))}</div> : <div className="p-8 text-center"><p className="font-black text-slate-800">You're caught up</p><p className="mt-1 text-sm text-slate-500">No draft invoices, unscheduled jobs, overdue balances, or quote revisions need action.</p></div>}
+          ))}</div> : <div className="p-8 text-center"><p className="font-black text-slate-800">You're caught up</p><p className="mt-1 text-sm text-slate-500">No new leads, draft invoices, unscheduled jobs, overdue balances, or quote revisions need action.</p></div>}
         </section>
       </div>
 
