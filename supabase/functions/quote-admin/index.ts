@@ -4,6 +4,7 @@ const ORG_ID = "00000000-0000-4000-8000-000000000001";
 const ALLOWED_ORIGINS = new Set([
   "https://www.rinsepoint.com",
   "https://rinsepoint.com",
+  "https://app.rinsepoint.com",
   "https://curblift-website-git-rinsepoint-os-jojo-s-projects82.vercel.app",
 ]);
 
