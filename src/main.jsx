@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './crm/leads-polish.css'
+import './crm/sidebar-collapse.css'
+import './crm/sidebar-collapse.js'
 import App from './App.jsx'
 import CrmApp from './crm/CrmApp.jsx'
 
