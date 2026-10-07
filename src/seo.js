@@ -1,4 +1,4 @@
-const BASE_URL = "https://rinsepoint.com";
+const BASE_URL = "https://www.rinsepoint.com";
 
 const pages = {
   "/": {
