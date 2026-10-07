@@ -1,0 +1,86 @@
+/* Desktop-only collapsible navigation rail for RinsePoint OS. */
+@media (min-width: 1024px) {
+  /* The existing mobile-menu button becomes the standard desktop hamburger. */
+  header.sticky button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  aside {
+    transition: width 180ms ease, transform 180ms ease;
+    overflow: hidden;
+  }
+
+  aside + div {
+    transition: padding-left 180ms ease;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside {
+    width: 5.5rem !important;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside + div {
+    padding-left: 5.5rem !important;
+  }
+
+  /* Replace the full wordmark with the RinsePoint mark in rail mode. */
+  html[data-rp-sidebar="collapsed"] aside > div:first-of-type {
+    justify-content: center;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    position: relative;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside > div:first-of-type img {
+    display: none;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside > div:first-of-type::after {
+    content: "";
+    display: block;
+    width: 2.75rem;
+    height: 2.75rem;
+    background: url("/rinsepoint-mark.svg") center / contain no-repeat;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside nav {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside nav > p {
+    display: none;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside nav > div {
+    gap: 0.35rem;
+  }
+
+  /* Hide text nodes without changing the icon components. */
+  html[data-rp-sidebar="collapsed"] aside nav button,
+  html[data-rp-sidebar="collapsed"] aside > div:last-child button {
+    font-size: 0 !important;
+    gap: 0 !important;
+    justify-content: center !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    min-height: 3rem;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside nav button svg,
+  html[data-rp-sidebar="collapsed"] aside > div:last-child button svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+    flex: none;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside > div:last-child {
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+  }
+
+  html[data-rp-sidebar="collapsed"] aside > div:last-child button {
+    width: 100%;
+  }
+}
