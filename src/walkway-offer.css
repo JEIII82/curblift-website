@@ -1,0 +1,39 @@
+/* RinsePoint public pricing: four clear residential starting points. */
+.package-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.package-card[data-rp-walkway-offer="true"] {
+  border-top: 3px solid #58abc9;
+}
+
+.package-card[data-rp-walkway-offer="true"] .package-label {
+  color: #007ba7;
+}
+
+.on-dark .package-card[data-rp-walkway-offer="true"] {
+  background: #12314b;
+  border-color: #385266;
+  border-top-color: #71d6ef;
+  color: white;
+}
+
+.on-dark .package-card[data-rp-walkway-offer="true"] .package-label {
+  color: #8bdef2;
+}
+
+.on-dark .package-card[data-rp-walkway-offer="true"] .package-note {
+  color: #c1d0dc;
+}
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .package-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .package-grid {
+    grid-template-columns: 1fr;
+  }
+}
