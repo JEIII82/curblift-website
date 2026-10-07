@@ -2,16 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   BadgeDollarSign,
-   ChevronRight,
+  ChevronRight,
   CircleDollarSign,
-   Mail,
+  Mail,
   MapPin,
   MessageSquareText,
   Pencil,
   Phone,
   ReceiptText,
   Search,
-   UserRound,
+  UserRound,
   X,
 } from "lucide-react";
 import { getCustomers, getCustomerWorkspace, updateCustomer } from "./api.js";
@@ -35,16 +35,33 @@ function titleCase(value) {
   return String(value).replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const leadStageLabel = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  estimate_needed: "Estimate Needed",
+  quote_sent: "Quote Sent",
+  follow_up: "Follow-Up",
+  revision_needed: "Needs Revision",
+};
+
+const leadOutcomeLabel = {
+  open: "Open",
+  won: "Won",
+  lost: "Lost",
+  do_not_contact: "Do Not Contact",
+};
+
 function badgeClass(status) {
-  if (["paid", "completed", "closed_won", "approved", "succeeded"].includes(status)) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  if (["scheduled", "sent", "viewed"].includes(status)) return "bg-blue-50 text-blue-700 ring-blue-200";
-  if (["in_progress", "on_my_way", "changes_requested", "partially_paid", "new"].includes(status)) return "bg-amber-50 text-amber-800 ring-amber-200";
-  if (["cancelled", "declined", "closed_lost", "overdue"].includes(status)) return "bg-red-50 text-red-700 ring-red-200";
+  if (["paid", "completed", "closed_won", "approved", "succeeded", "won"].includes(status)) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (["scheduled", "sent", "viewed", "quote_sent", "open"].includes(status)) return "bg-blue-50 text-blue-700 ring-blue-200";
+  if (["in_progress", "on_my_way", "changes_requested", "revision_needed", "follow_up", "partially_paid", "new"].includes(status)) return "bg-amber-50 text-amber-800 ring-amber-200";
+  if (["cancelled", "declined", "closed_lost", "lost", "do_not_contact", "overdue"].includes(status)) return "bg-red-50 text-red-700 ring-red-200";
   return "bg-slate-100 text-slate-600 ring-slate-200";
 }
 
-function Badge({ status }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1 ring-inset ${badgeClass(status)}`}>{titleCase(status)}</span>;
+function Badge({ status, label }) {
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ring-1 ring-inset ${badgeClass(status)}`}>{label || titleCase(status)}</span>;
 }
 
 function Section({ title, subtitle, action, children }) {
@@ -114,8 +131,8 @@ function getNextAction({ leads, quotes, jobs, invoices }) {
   const openQuote = quotes.find((quote) => ["sent", "viewed"].includes(quote.status));
   if (openQuote) return { type: "quote", id: openQuote.id, eyebrow: "Waiting on customer", title: `Follow up on Quote #${openQuote.quote_number}`, text: openQuote.status === "viewed" ? "The customer viewed the quote but has not approved it yet." : "The quote is waiting for customer approval.", button: "Open quote" };
 
-  const activeLead = leads.find((lead) => ["new", "contacted", "qualified", "quote_needed"].includes(lead.status));
-  if (activeLead) return { type: "lead", lead: activeLead, eyebrow: "Lead needs action", title: activeLead.status === "new" ? "Create a quote" : "Continue this lead", text: activeLead.requested_service || "This request still needs action.", button: "Create quote" };
+  const activeLead = leads.find((lead) => lead.outcome === "open" && ["new", "contacted", "qualified", "estimate_needed", "follow_up"].includes(lead.stage));
+  if (activeLead) return { type: "lead", lead: activeLead, eyebrow: "Lead needs action", title: activeLead.stage === "new" ? "Create a quote" : "Continue this lead", text: activeLead.requested_service || "This request still needs action.", button: "Create quote" };
 
   return { type: "done", eyebrow: "Up to date", title: "Nothing needs action right now", text: "Completed work, billing, and history remain available below.", button: null };
 }
@@ -322,8 +339,8 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
           <Section title="Quotes" subtitle="Estimate and approval history.">
             {quotes.length ? quotes.map((quote) => <RowButton key={quote.id} onClick={() => onOpenQuote?.(quote.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Quote #{quote.quote_number} · {quote.title}</p><Badge status={quote.status} /></div><p className="mt-1 text-sm text-slate-500">{formatDate(quote.created_at)} · {money(quote.total)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No quotes yet.</div>}
           </Section>
-          <Section title="Requests / leads" subtitle="Original requests stay available even after the work is won or completed.">
-            {leads.length ? leads.map((lead) => <div key={lead.id} className="border-b border-slate-100 p-5 last:border-b-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{lead.requested_service || "Service request"}</p><Badge status={lead.status} /></div><p className="mt-1 text-sm text-slate-500">Submitted {formatDate(lead.created_at, true)}{lead.submitted_name ? ` as ${lead.submitted_name}` : ""}</p>{lead.project_details && <p className="mt-3 text-sm leading-6 text-slate-600">{lead.project_details}</p>}</div>) : <div className="p-5 text-sm text-slate-500">No lead history.</div>}
+          <Section title="Requests / leads" subtitle="Sales stage and final outcome stay visible even after the work is won or completed.">
+            {leads.length ? leads.map((lead) => <div key={lead.id} className="border-b border-slate-100 p-5 last:border-b-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{lead.requested_service || "Service request"}</p><Badge status={lead.stage} label={`Stage: ${leadStageLabel[lead.stage] || titleCase(lead.stage)}`} /><Badge status={lead.outcome} label={`Outcome: ${leadOutcomeLabel[lead.outcome] || titleCase(lead.outcome)}`} /></div><p className="mt-1 text-sm text-slate-500">Submitted {formatDate(lead.created_at, true)}{lead.submitted_name ? ` as ${lead.submitted_name}` : ""}</p>{lead.lost_reason && lead.outcome !== "open" && <p className="mt-2 text-xs font-bold text-red-700">Reason: {lead.lost_reason}</p>}{lead.project_details && <p className="mt-3 text-sm leading-6 text-slate-600">{lead.project_details}</p>}</div>) : <div className="p-5 text-sm text-slate-500">No lead history.</div>}
           </Section>
         </div>
       )}
