@@ -7,6 +7,7 @@ const ALLOWED_ORIGINS = new Set([
   "https://app.rinsepoint.com",
   "https://curblift-website-git-rinsepoint-os-jojo-s-projects82.vercel.app",
 ]);
+const PACKAGE_TIERS = new Set(["good", "better", "best", "custom"]);
 
 function corsHeaders(origin: string | null) {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://www.rinsepoint.com";
@@ -37,6 +38,56 @@ function money(value: unknown) {
 function quantity(value: unknown) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? Math.round(n * 1000) / 1000 : 1;
+}
+
+function sanitizeItem(item: any, index: number, allowOptional = true) {
+  const optional = allowOptional ? Boolean(item?.optional) : false;
+  return {
+    service_id: text(item?.serviceId, 80) || null,
+    name: text(item?.name, 200),
+    description: text(item?.description, 1200) || null,
+    quantity: quantity(item?.quantity),
+    unit_price: money(item?.unitPrice),
+    optional,
+    selected: optional ? Boolean(item?.selected) : true,
+    sort_order: index * 10,
+  };
+}
+
+function sanitizePackages(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const packages = value.slice(0, 4).map((pkg: any, packageIndex: number) => {
+    const tierCandidate = text(pkg?.tier, 20).toLowerCase();
+    const tier = PACKAGE_TIERS.has(tierCandidate) ? tierCandidate : "custom";
+    const items = Array.isArray(pkg?.items)
+      ? pkg.items.map((item: any, itemIndex: number) => {
+          const clean = sanitizeItem(item, itemIndex, false);
+          return {
+            serviceId: clean.service_id,
+            name: clean.name,
+            description: clean.description,
+            quantity: clean.quantity,
+            unitPrice: clean.unit_price,
+            sortOrder: clean.sort_order,
+          };
+        }).filter((item: any) => item.name)
+      : [];
+
+    return {
+      name: text(pkg?.name, 200),
+      tier,
+      description: text(pkg?.description, 1200) || null,
+      isRecommended: Boolean(pkg?.isRecommended),
+      sortOrder: packageIndex * 10,
+      items,
+    };
+  }).filter((pkg: any) => pkg.name);
+
+  if (packages.length && !packages.some((pkg: any) => pkg.isRecommended)) {
+    const preferred = packages.findIndex((pkg: any) => pkg.tier === "better");
+    packages[preferred >= 0 ? preferred : 0].isRecommended = true;
+  }
+  return packages;
 }
 
 function toE164(value: string) {
@@ -165,23 +216,24 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const items = Array.isArray(payload.items) ? payload.items : [];
-      if (!items.length) return json({ error: "Add at least one quote item." }, 400, origin);
-
-      const sanitizedItems = items
-        .map((item: any, index: number) => ({
-          service_id: text(item.serviceId, 80) || null,
-          name: text(item.name, 200),
-          description: text(item.description, 1200) || null,
-          quantity: quantity(item.quantity),
-          unit_price: money(item.unitPrice),
-          optional: Boolean(item.optional),
-          selected: item.optional ? Boolean(item.selected) : true,
-          sort_order: index * 10,
-        }))
+      const rawItems = Array.isArray(payload.items) ? payload.items : [];
+      const sanitizedItems = rawItems
+        .map((item: any, index: number) => sanitizeItem(item, index, true))
         .filter((item: any) => item.name);
+      const packages = sanitizePackages(payload.packages);
 
-      if (!sanitizedItems.length) return json({ error: "Quote items need a name." }, 400, origin);
+      if (packages.length && (packages.length < 2 || packages.length > 4)) {
+        return json({ error: "Package quotes need between 2 and 4 options." }, 400, origin);
+      }
+      if (packages.filter((pkg: any) => pkg.isRecommended).length > 1) {
+        return json({ error: "Choose only one recommended package." }, 400, origin);
+      }
+      if (packages.some((pkg: any) => !pkg.items.length)) {
+        return json({ error: "Every package needs at least one service or line item." }, 400, origin);
+      }
+      if (!sanitizedItems.length && !packages.length) {
+        return json({ error: "Add at least one quote item or package." }, 400, origin);
+      }
 
       const { data: taxSettings } = await supabase
         .from("organization_settings")
@@ -246,17 +298,54 @@ Deno.serve(async (req: Request) => {
         savedQuote = data;
       }
 
-      const { error: itemError } = await supabase.from("quote_items").insert(
-        sanitizedItems.map((item: any) => ({ ...item, quote_id: savedQuote.id }))
-      );
-      if (itemError) throw itemError;
+      if (sanitizedItems.length) {
+        const { error: itemError } = await supabase.from("quote_items").insert(
+          sanitizedItems.map((item: any) => ({ ...item, quote_id: savedQuote.id, package_id: null }))
+        );
+        if (itemError) throw itemError;
+      }
 
-      const { data: finalQuote, error: finalError } = await supabase
-        .from("quotes")
-        .select("id,quote_number,status,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,public_token,property_id")
-        .eq("id", savedQuote.id)
-        .single();
+      const packagePayload = packages.map((pkg: any) => ({
+        name: pkg.name,
+        tier: pkg.tier,
+        description: pkg.description,
+        isRecommended: pkg.isRecommended,
+        sortOrder: pkg.sortOrder,
+        items: pkg.items,
+      }));
+
+      const { error: packageReplaceError } = await supabase.rpc("replace_quote_packages", {
+        p_quote_id: savedQuote.id,
+        p_organization_id: ORG_ID,
+        p_packages: packagePayload,
+      });
+      if (packageReplaceError) throw packageReplaceError;
+
+      const [{ data: finalQuote, error: finalError }, { data: finalPackages, error: finalPackagesError }, { data: finalItems, error: finalItemsError }] = await Promise.all([
+        supabase
+          .from("quotes")
+          .select("id,quote_number,status,subtotal,discount_amount,tax_amount,tax_rate,tax_exempt,total,expires_at,public_token,property_id,selected_package_id")
+          .eq("id", savedQuote.id)
+          .single(),
+        supabase
+          .from("quote_packages")
+          .select("id,name,tier,description,is_recommended,sort_order")
+          .eq("quote_id", savedQuote.id)
+          .order("sort_order", { ascending: true }),
+        supabase
+          .from("quote_items")
+          .select("id,service_id,package_id,name,description,quantity,unit_price,line_total,optional,selected,sort_order")
+          .eq("quote_id", savedQuote.id)
+          .order("sort_order", { ascending: true }),
+      ]);
       if (finalError) throw finalError;
+      if (finalPackagesError) throw finalPackagesError;
+      if (finalItemsError) throw finalItemsError;
+
+      const hydratedPackages = (finalPackages || []).map((pkg: any) => ({
+        ...pkg,
+        items: (finalItems || []).filter((item: any) => item.package_id === pkg.id),
+      }));
 
       await supabase.from("activity_events").insert({
         organization_id: ORG_ID,
@@ -267,12 +356,16 @@ Deno.serve(async (req: Request) => {
         entity_id: savedQuote.id,
         event_type: quoteId ? "quote.updated" : "quote.created",
         summary: quoteId ? `Quote #${savedQuote.quote_number} updated` : `Quote #${savedQuote.quote_number} created`,
-        metadata: { leadId, total: finalQuote.total },
+        metadata: { leadId, total: finalQuote.total, packageCount: hydratedPackages.length },
       });
 
       return json({
         ok: true,
-        quote: finalQuote,
+        quote: {
+          ...finalQuote,
+          items: finalItems || [],
+          packages: hydratedPackages,
+        },
         publicUrl: `${publicBaseUrl}/quote/?token=${finalQuote.public_token}`,
       }, quoteId ? 200 : 201, origin);
     }
@@ -291,7 +384,18 @@ Deno.serve(async (req: Request) => {
       if (!quote) return json({ error: "Quote not found." }, 404, origin);
       if (!quote.customer?.email) return json({ error: "Add a customer email before sending this quote." }, 400, origin);
       if (!quote.property_id || !quote.property?.address_line1) return json({ error: "Add the service address before sending this quote." }, 400, origin);
-      if (!quote.items?.length) return json({ error: "Add at least one quote item before sending." }, 400, origin);
+      if (!quote.items?.length) return json({ error: "Add at least one quote item before sending this quote." }, 400, origin);
+
+      const { data: quotePackages, error: packagesError } = await supabase
+        .from("quote_packages")
+        .select("id,name,tier,description,is_recommended,sort_order")
+        .eq("quote_id", quoteId)
+        .eq("organization_id", ORG_ID)
+        .order("sort_order", { ascending: true });
+      if (packagesError) throw packagesError;
+      if ((quotePackages || []).length && !quote.selected_package_id) {
+        return json({ error: "Choose a default package before sending this quote." }, 400, origin);
+      }
 
       const expiresAt = quote.expires_at || new Date(Date.now() + 14 * 86400000).toISOString();
 
@@ -303,7 +407,7 @@ Deno.serve(async (req: Request) => {
           expires_at: expiresAt,
         })
         .eq("id", quoteId)
-        .select("id,quote_number,status,total,public_token,expires_at")
+        .select("id,quote_number,status,total,public_token,expires_at,selected_package_id")
         .single();
       if (sendError) throw sendError;
 
@@ -327,8 +431,10 @@ Deno.serve(async (req: Request) => {
           tax_exempt: quote.tax_exempt,
           total: quote.total,
           expires_at: expiresAt,
+          selected_package_id: quote.selected_package_id,
           customer: quote.customer,
           property: quote.property,
+          packages: quotePackages || [],
           items: quote.items,
         },
       });
@@ -344,10 +450,10 @@ Deno.serve(async (req: Request) => {
         entity_id: quoteId,
         event_type: "quote.sent",
         summary: `Quote #${quote.quote_number} marked sent`,
-        metadata: { total: quote.total, publicUrl },
+        metadata: { total: quote.total, publicUrl, packageCount: (quotePackages || []).length },
       });
 
-      const customerFirstName = (quote.customer.display_name || "").trim().split(/\\s+/)[0] || "there";
+      const customerFirstName = (quote.customer.display_name || "").trim().split(/\s+/)[0] || "there";
       const smsConsent = Boolean(quote.customer.sms_consent_at && !quote.customer.sms_opt_out_at);
       const smsToPhone = toE164(quote.customer.phone || "");
 
