@@ -1,0 +1,87 @@
+.rp-quote-lifecycle {
+  margin-top: 1rem;
+  border: 1px solid #bae6fd;
+  border-radius: 0.9rem;
+  background: #f0fdfa;
+  padding: 1rem;
+}
+
+.rp-quote-lifecycle-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #0e7490;
+}
+
+.rp-quote-lifecycle-title {
+  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #08243f;
+}
+
+.rp-quote-lifecycle-detail {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #526777;
+}
+
+.rp-quote-lifecycle-meta {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dbeafe;
+}
+
+.rp-quote-status-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.rp-quote-status-line strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  color: #334155;
+}
+
+.rp-quote-lifecycle--viewed {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.rp-quote-lifecycle--approved {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.rp-quote-lifecycle--approved .rp-quote-lifecycle-eyebrow {
+  color: #047857;
+}
+
+.rp-quote-lifecycle--changes_requested {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.rp-quote-lifecycle--changes_requested .rp-quote-lifecycle-eyebrow {
+  color: #b45309;
+}
+
+.rp-quote-lifecycle--declined,
+.rp-quote-lifecycle--cancelled,
+.rp-quote-lifecycle--expired {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.rp-quote-lifecycle--declined .rp-quote-lifecycle-eyebrow,
+.rp-quote-lifecycle--cancelled .rp-quote-lifecycle-eyebrow,
+.rp-quote-lifecycle--expired .rp-quote-lifecycle-eyebrow {
+  color: #64748b;
+}
