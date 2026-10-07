@@ -1,5 +1,7 @@
 const STORAGE_KEY = "rinsepoint-os-sidebar-collapsed";
 const DESKTOP_QUERY = "(min-width: 1024px)";
+const NAV_SELECTOR = "aside.fixed.inset-y-0.left-0";
+const TOGGLE_SELECTOR = "header.sticky.top-0 button";
 
 function isDesktop() {
   return window.matchMedia(DESKTOP_QUERY).matches;
@@ -31,7 +33,7 @@ function storedPreference() {
 }
 
 function syncAccessibility() {
-  const toggle = document.querySelector("header.sticky button");
+  const toggle = document.querySelector(TOGGLE_SELECTOR);
   if (toggle) {
     const label = isCollapsed() ? "Expand navigation" : "Collapse navigation";
     toggle.setAttribute("aria-label", label);
@@ -39,12 +41,13 @@ function syncAccessibility() {
     toggle.setAttribute("aria-expanded", String(!isCollapsed()));
   }
 
-  document.querySelectorAll("aside nav button").forEach((button) => {
+  const nav = document.querySelector(NAV_SELECTOR);
+  nav?.querySelectorAll("nav button").forEach((button) => {
     const label = button.textContent?.trim();
     if (label) button.setAttribute("title", label);
   });
 
-  const signOut = document.querySelector("aside button:last-child");
+  const signOut = nav?.querySelector(":scope > div:last-child button");
   if (signOut?.textContent?.trim()) signOut.setAttribute("title", "Sign out");
 }
 
@@ -55,11 +58,11 @@ if (typeof window !== "undefined") {
     "click",
     (event) => {
       if (!isDesktop()) return;
-      const toggle = event.target.closest?.("header.sticky button");
+      const toggle = event.target.closest?.(TOGGLE_SELECTOR);
       if (!toggle) return;
 
-      // On desktop this button controls the rail. Prevent the existing mobile
-      // drawer handler from also opening the overlay state.
+      // On desktop this button controls only the navigation rail. Prevent the
+      // existing mobile drawer handler from also opening the overlay state.
       event.preventDefault();
       event.stopPropagation();
       applyCollapsed(!isCollapsed());
