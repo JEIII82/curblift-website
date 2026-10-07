@@ -11,12 +11,9 @@
     <meta name="apple-mobile-web-app-title" content="RinsePoint" />
     <link rel="preload" as="image" href="/images/after-sidewalk.webp" fetchpriority="high" />
     <link rel="canonical" href="https://rinsepoint.com/" />
-    <link rel="icon" href="/favicon.ico?v=rinsepoint-2" sizes="16x16 32x32 48x48" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=rinsepoint-2" />
-    <link rel="icon" type="image/svg+xml" sizes="any" href="/rinsepoint-favicon.svg?v=2" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" href="/favicon-rinsepoint.svg" type="image/svg+xml" sizes="any" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="mask-icon" href="/rinsepoint-mask.svg" color="#0B2D5B" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:site_name" content="RinsePoint" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:title" content="RinsePoint | Pressure Washing in Allen, TX" />
@@ -36,20 +33,37 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "RinsePoint Exterior Cleaning",
-        "alternateName": "RinsePoint",
-        "url": "https://rinsepoint.com/",
-        "logo": "https://rinsepoint.com/rinsepoint-logo.svg",
-        "telephone": "+1-972-379-7161",
-        "description": "Pressure washing, driveway cleaning, sidewalk cleaning, patio cleaning, concrete cleaning, and exterior surface cleaning in Allen and nearby North Texas communities.",
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+1-972-379-7161",
-          "contactType": "customer service",
-          "areaServed": "US-TX",
-          "availableLanguage": "English"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://rinsepoint.com/#organization",
+            "name": "RinsePoint Exterior Cleaning",
+            "alternateName": "RinsePoint",
+            "url": "https://rinsepoint.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://rinsepoint.com/rinsepoint-logo.svg"
+            },
+            "telephone": "+1-972-379-7161",
+            "description": "Pressure washing, driveway cleaning, sidewalk cleaning, patio cleaning, concrete cleaning, and exterior surface cleaning in Allen and nearby North Texas communities.",
+            "areaServed": ["Allen, TX", "McKinney, TX", "Plano, TX", "Fairview, TX", "Lucas, TX", "Parker, TX", "Murphy, TX", "Wylie, TX"],
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+1-972-379-7161",
+              "contactType": "customer service",
+              "areaServed": "US-TX",
+              "availableLanguage": "English"
+            }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://rinsepoint.com/#website",
+            "url": "https://rinsepoint.com/",
+            "name": "RinsePoint",
+            "alternateName": "RinsePoint Exterior Cleaning",
+            "publisher": { "@id": "https://rinsepoint.com/#organization" }
+          }
+        ]
       }
     </script>
   </head>
