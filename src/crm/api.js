@@ -140,11 +140,15 @@ export async function countRows(session, table, query = "") {
   return total === "*" ? 0 : Number(total || 0);
 }
 
-export async function updateLeadStatus(session, leadId, status) {
-  return rest(session, `leads?id=eq.${encodeURIComponent(leadId)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
+export async function leadAdmin(session, payload) {
+  const fresh = await ensureFreshSession(session);
+  if (!fresh) throw new Error("Your session expired. Please sign in again.");
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/lead-admin`, {
+    method: "POST",
+    headers: headers(fresh, { "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
   });
+  return readJson(response);
 }
 
 export async function getDashboard(session) {
@@ -168,14 +172,14 @@ export async function getDashboard(session) {
     actionJobs,
     actionInvoices,
   ] = await Promise.all([
-    countRows(session, "leads", `${org}&status=eq.new`),
+    countRows(session, "leads", `${org}&outcome=eq.open&stage=eq.new`),
     countRows(session, "quotes", `${org}&status=in.(sent,viewed,changes_requested)`),
     countRows(session, "jobs", `${org}&status=in.(scheduled,on_my_way,in_progress)`),
     countRows(session, "invoices", `${org}&status=in.(sent,partially_paid,overdue)`),
     countRows(session, "jobs", `${org}&status=eq.unscheduled`),
     countRows(session, "invoices", `${org}&status=eq.draft`),
     countRows(session, "invoices", `${org}&status=eq.overdue`),
-    rest(session, `leads?select=id,status,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
+    rest(session, `leads?select=id,status,stage,outcome,lost_reason,requested_service,service_city,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone)&${org}&order=created_at.desc&limit=6`, { method: "GET" }),
     rest(session, `appointments?select=id,status,starts_at,ends_at,customer:customers(id,display_name),property:properties(address_line1,city,state),job:jobs(id,job_number,title,status)&${org}&starts_at=gte.${encodeURIComponent(today.toISOString())}&starts_at=lt.${encodeURIComponent(tomorrow.toISOString())}&order=starts_at.asc`, { method: "GET" }),
     rest(session, `quotes?select=id,quote_number,status,title,total,sent_at,viewed_at,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(sent,viewed,changes_requested)&order=updated_at.asc&limit=5`, { method: "GET" }),
     rest(session, `jobs?select=id,job_number,status,title,scheduled_start,quoted_total,customer:customers(id,display_name),lead:leads(id,submitted_name)&${org}&status=in.(unscheduled,scheduled,on_my_way,in_progress)&order=scheduled_start.asc.nullslast,created_at.asc&limit=6`, { method: "GET" }),
@@ -199,7 +203,7 @@ export async function getDashboard(session) {
 }
 
 export function getLeads(session) {
-  return rest(session, `leads?select=id,status,requested_service,requested_package,service_city,service_state,project_details,property_id,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
+  return rest(session, `leads?select=id,status,stage,outcome,lost_reason,closed_at,requested_service,requested_package,service_city,service_state,project_details,property_id,submitted_name,submitted_email,submitted_phone,created_at,customer:customers!leads_customer_id_fkey(id,display_name,email,phone),property:properties(id,address_line1,address_line2,city,state,postal_code)&organization_id=eq.${ORGANIZATION_ID}&order=created_at.desc&limit=200`, { method: "GET" });
 }
 
 export function getCustomers(session) {
@@ -220,7 +224,7 @@ export async function getCustomerWorkspace(session, customerId) {
   const [customerRows, properties, leads, quotes, jobs, invoices, payments, appointments, communications, tasks, reviews, activity] = await Promise.all([
     rest(session, `customers?select=id,display_name,first_name,last_name,company_name,email,phone,preferred_contact,tags,notes,lead_source,marketing_opt_in,sms_consent_at,sms_opt_out_at,sms_consent_source,created_at,updated_at&${org}&id=eq.${id}&limit=1`, { method: "GET" }),
     rest(session, `properties?select=id,label,address_line1,address_line2,city,state,postal_code,access_notes,property_notes,is_primary,created_at&${org}&customer_id=eq.${id}&archived_at=is.null&order=is_primary.desc,created_at.desc`, { method: "GET" }),
-    rest(session, `leads?select=id,status,requested_service,requested_package,project_details,service_city,service_state,submitted_name,submitted_email,submitted_phone,created_at,closed_at,property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
+    rest(session, `leads?select=id,status,stage,outcome,lost_reason,requested_service,requested_package,project_details,service_city,service_state,submitted_name,submitted_email,submitted_phone,created_at,closed_at,property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
     rest(session, `quotes?select=id,quote_number,status,title,total,subtotal,tax_amount,created_at,sent_at,viewed_at,approved_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code),jobs(id,job_number,status)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
     rest(session, `jobs?select=id,job_number,status,title,scope_of_work,quoted_total,final_total,scheduled_start,scheduled_end,actual_start,actual_end,completed_at,created_at,lead:leads(id,submitted_name,requested_service),property:properties(id,address_line1,city,state,postal_code)&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
     rest(session, `invoices?select=id,invoice_number,status,subtotal,tax_amount,total,amount_paid,amount_due,due_at,sent_at,paid_at,created_at,job:jobs(id,job_number,title,lead:leads(id,submitted_name,requested_service))&${org}&customer_id=eq.${id}&order=created_at.desc`, { method: "GET" }),
