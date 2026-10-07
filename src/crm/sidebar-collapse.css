@@ -1,42 +1,46 @@
-/* Desktop-only collapsible navigation rail for RinsePoint OS. */
+/* Desktop-only collapsible navigation rail for RinsePoint OS.
+   IMPORTANT: every rule is scoped to the actual navigation sidebar so
+   customer/quote/job/invoice <aside> elements are never touched. */
 @media (min-width: 1024px) {
   /* The existing mobile-menu button becomes the standard desktop hamburger. */
-  header.sticky button {
+  header.sticky.top-0 > div button,
+  header.sticky.top-0 button:first-of-type {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
   }
 
-  aside {
+  aside.fixed.inset-y-0.left-0 {
     transition: width 180ms ease, transform 180ms ease;
     overflow: hidden;
   }
 
-  aside + div {
+  aside.fixed.inset-y-0.left-0 + div {
     transition: padding-left 180ms ease;
+    min-width: 0;
   }
 
-  html[data-rp-sidebar="collapsed"] aside {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 {
     width: 5.5rem !important;
   }
 
-  html[data-rp-sidebar="collapsed"] aside + div {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 + div {
     padding-left: 5.5rem !important;
   }
 
   /* Replace the full wordmark with the RinsePoint mark in rail mode. */
-  html[data-rp-sidebar="collapsed"] aside > div:first-of-type {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:first-of-type {
     justify-content: center;
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
     position: relative;
   }
 
-  html[data-rp-sidebar="collapsed"] aside > div:first-of-type img {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:first-of-type img {
     display: none;
   }
 
-  html[data-rp-sidebar="collapsed"] aside > div:first-of-type::after {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:first-of-type::after {
     content: "";
     display: block;
     width: 2.75rem;
@@ -44,22 +48,22 @@
     background: url("/rinsepoint-mark.svg") center / contain no-repeat;
   }
 
-  html[data-rp-sidebar="collapsed"] aside nav {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 nav {
     padding-left: 0.75rem !important;
     padding-right: 0.75rem !important;
   }
 
-  html[data-rp-sidebar="collapsed"] aside nav > p {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 nav > p {
     display: none;
   }
 
-  html[data-rp-sidebar="collapsed"] aside nav > div {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 nav > div {
     gap: 0.35rem;
   }
 
   /* Hide text nodes without changing the icon components. */
-  html[data-rp-sidebar="collapsed"] aside nav button,
-  html[data-rp-sidebar="collapsed"] aside > div:last-child button {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 nav button,
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:last-child button {
     font-size: 0 !important;
     gap: 0 !important;
     justify-content: center !important;
@@ -68,19 +72,19 @@
     min-height: 3rem;
   }
 
-  html[data-rp-sidebar="collapsed"] aside nav button svg,
-  html[data-rp-sidebar="collapsed"] aside > div:last-child button svg {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 nav button svg,
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:last-child button svg {
     width: 1.35rem !important;
     height: 1.35rem !important;
     flex: none;
   }
 
-  html[data-rp-sidebar="collapsed"] aside > div:last-child {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:last-child {
     left: 0.75rem !important;
     right: 0.75rem !important;
   }
 
-  html[data-rp-sidebar="collapsed"] aside > div:last-child button {
+  html[data-rp-sidebar="collapsed"] aside.fixed.inset-y-0.left-0 > div:last-child button {
     width: 100%;
   }
 }
