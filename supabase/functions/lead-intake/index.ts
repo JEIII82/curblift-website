@@ -78,8 +78,6 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-
-    // Honeypot. Real customers never fill this.
     if (cleanText(body.website, 200)) return json({ ok: true }, 200, origin);
 
     const name = cleanText(body.name, 120);
@@ -98,13 +96,10 @@ Deno.serve(async (req: Request) => {
 
     const smsConsent = isTruthy(body.smsConsent);
     const preferredContactRaw = cleanText(body.preferredContact, 20).toLowerCase();
-    const preferredContact = ["email", "phone", "sms"].includes(preferredContactRaw)
+    const explicitPreferredContact = ["email", "phone", "sms"].includes(preferredContactRaw)
       ? preferredContactRaw
-      : smsConsent
-        ? "sms"
-        : email
-          ? "email"
-          : "phone";
+      : "";
+    const preferredContact = explicitPreferredContact || (email ? "email" : "phone");
 
     const landingPage = cleanText(body.landingPage || body.pageUrl, 1000);
     const referrer = cleanText(body.referrer, 1000);
@@ -149,7 +144,6 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Rate-limit by a one-way hash of the requester IP.
     const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
     const ip = req.headers.get("cf-connecting-ip") || forwarded || "unknown";
     const ipHash = await sha256(ip);
@@ -166,10 +160,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Too many requests. Please try again shortly." }, 429, origin);
     }
 
-    await supabase.from("lead_intake_attempts").insert({
-      organization_id: ORG_ID,
-      ip_hash: ipHash,
-    });
+    await supabase.from("lead_intake_attempts").insert({ organization_id: ORG_ID, ip_hash: ipHash });
 
     const intakePayload = {
       contractVersion: 1,
@@ -198,7 +189,6 @@ Deno.serve(async (req: Request) => {
       requestId,
     };
 
-    // One database RPC owns the business transaction: customer/property/lead/task/events.
     const { data: intakeResult, error: intakeError } = await supabase.rpc("intake_website_lead", {
       p_payload: intakePayload,
     });
@@ -207,12 +197,8 @@ Deno.serve(async (req: Request) => {
       console.error("lead intake transaction failed", intakeError);
       return json({ error: "We couldn't save your quote request. Please try again." }, 500, origin);
     }
+    if (!intakeResult?.leadId) throw new Error("Lead intake transaction returned no lead ID");
 
-    if (!intakeResult?.leadId) {
-      throw new Error("Lead intake transaction returned no lead ID");
-    }
-
-    // Integrations are secondary. A Make failure never rolls back or hides CRM persistence.
     if (intakeResult.automationEventId) {
       const { data: integration } = await supabase
         .from("integration_settings")
@@ -241,24 +227,18 @@ Deno.serve(async (req: Request) => {
             signal: AbortSignal.timeout(5000),
           });
 
-          await supabase
-            .from("automation_events")
-            .update({
-              status: makeResponse.ok ? "completed" : "failed",
-              attempts: 1,
-              processed_at: makeResponse.ok ? new Date().toISOString() : null,
-              last_error: makeResponse.ok ? null : "Make returned HTTP " + makeResponse.status,
-            })
-            .eq("id", intakeResult.automationEventId);
+          await supabase.from("automation_events").update({
+            status: makeResponse.ok ? "completed" : "failed",
+            attempts: 1,
+            processed_at: makeResponse.ok ? new Date().toISOString() : null,
+            last_error: makeResponse.ok ? null : "Make returned HTTP " + makeResponse.status,
+          }).eq("id", intakeResult.automationEventId);
         } catch (error) {
-          await supabase
-            .from("automation_events")
-            .update({
-              status: "failed",
-              attempts: 1,
-              last_error: error instanceof Error ? error.message : "Make delivery failed",
-            })
-            .eq("id", intakeResult.automationEventId);
+          await supabase.from("automation_events").update({
+            status: "failed",
+            attempts: 1,
+            last_error: error instanceof Error ? error.message : "Make delivery failed",
+          }).eq("id", intakeResult.automationEventId);
         }
       }
     }
