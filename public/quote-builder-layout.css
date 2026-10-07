@@ -1,0 +1,46 @@
+/* RinsePoint OS — quote builder responsive layout guard.
+   The CRM sidebar reduces usable width, so the quote summary should not
+   enter a two-column layout merely because the browser reaches Tailwind's
+   default xl (1280px) breakpoint. */
+
+/* Always allow the quote editor and summary columns to shrink cleanly. */
+[class~="xl:grid-cols-[1.35fr_.65fr]"] > section,
+[class~="xl:grid-cols-[1.35fr_.65fr]"] > aside {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Normal laptops / medium desktop widths: stack summary under the editor. */
+@media (min-width: 1280px) and (max-width: 1535.98px) {
+  [class~="xl:grid-cols-[1.35fr_.65fr]"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [class~="xl:grid-cols-[1.35fr_.65fr]"] > aside {
+    position: static !important;
+    top: auto !important;
+    align-self: auto !important;
+    width: 100%;
+  }
+}
+
+/* Large desktop: keep a predictable summary rail instead of a percentage
+   column that can become awkwardly narrow or unnecessarily wide. */
+@media (min-width: 1536px) {
+  [class~="xl:grid-cols-[1.35fr_.65fr]"] {
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+  }
+
+  [class~="xl:grid-cols-[1.35fr_.65fr]"] > aside {
+    width: 320px;
+    justify-self: stretch;
+  }
+}
+
+/* Prevent long controls/content in either column from forcing horizontal
+   page overflow. */
+[class~="xl:grid-cols-[1.35fr_.65fr]"] input,
+[class~="xl:grid-cols-[1.35fr_.65fr]"] select,
+[class~="xl:grid-cols-[1.35fr_.65fr]"] textarea {
+  max-width: 100%;
+}
