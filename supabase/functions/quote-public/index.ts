@@ -29,11 +29,6 @@ function clean(value: unknown, max = 2000) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function stringArray(value: unknown, max = 100) {
-  if (!Array.isArray(value)) return null;
-  return value.map((item) => clean(item, max)).filter(Boolean);
-}
-
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
 
@@ -63,13 +58,8 @@ Deno.serve(async (req: Request) => {
       .eq("public_token", token)
       .single();
 
-    if (!quote || quote.status === "draft") {
-      return json({ error: "Quote not found." }, 404, origin);
-    }
-
-    if (quote.status === "cancelled") {
-      return json({ error: "This quote has been cancelled. Contact RinsePoint if you would like an updated quote." }, 410, origin);
-    }
+    if (!quote || quote.status === "draft") return json({ error: "Quote not found." }, 404, origin);
+    if (quote.status === "cancelled") return json({ error: "This quote has been cancelled. Contact RinsePoint if you would like an updated quote." }, 410, origin);
 
     const { data: packageRows, error: packageError } = await supabase
       .from("quote_packages")
@@ -90,10 +80,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === "GET") {
       if (quote.status === "sent") {
         const viewedAt = quote.viewed_at || new Date().toISOString();
-        await supabase.from("quotes").update({
-          status: "viewed",
-          viewed_at: viewedAt,
-        }).eq("id", quote.id);
+        await supabase.from("quotes").update({ status: "viewed", viewed_at: viewedAt }).eq("id", quote.id);
         quote.status = "viewed";
         quote.viewed_at = viewedAt;
 
@@ -138,156 +125,39 @@ Deno.serve(async (req: Request) => {
     const approvalName = clean(body.name, 160);
     const message = clean(body.message, 2000);
 
+    if (action === "approve") {
+      const requestedPackageId = clean(body.packageId, 100) || null;
+      const selectedAddOnIds = Array.isArray(body.selectedAddOnIds)
+        ? body.selectedAddOnIds.map((item: unknown) => clean(item, 100)).filter(Boolean)
+        : null;
+
+      const { data: approval, error: approvalError } = await supabase.rpc("approve_public_quote", {
+        p_quote_id: quote.id,
+        p_organization_id: ORG_ID,
+        p_approval_name: approvalName,
+        p_package_id: requestedPackageId,
+        p_selected_addon_ids: selectedAddOnIds,
+      });
+
+      if (approvalError) {
+        const messageText = approvalError.message || "Unable to approve this quote.";
+        const status = /not found/i.test(messageText) ? 404 : /current status|closed|expired|cancelled|revision/i.test(messageText) ? 409 : 400;
+        return json({ error: messageText }, status, origin);
+      }
+
+      return json(approval, 200, origin);
+    }
+
     if (quote.status === "changes_requested") {
       return json({ error: "RinsePoint is preparing an updated quote. Approval will reopen when the revision is sent." }, 409, origin);
     }
-
     if (["approved","declined","expired"].includes(quote.status)) {
       return json({ error: "This quote is already closed." }, 409, origin);
     }
 
-    if (action === "approve") {
-      if (!approvalName) return json({ error: "Enter your name to approve the quote." }, 400, origin);
-      if (!quote.property_id) return json({ error: "Service address is missing. Please contact RinsePoint." }, 409, origin);
-
-      let selectedPackageId = quote.selected_package_id || null;
-      const requestedPackageId = clean(body.packageId, 100) || null;
-
-      if (packages.length) {
-        selectedPackageId = requestedPackageId || selectedPackageId || packages.find((pkg: any) => pkg.is_recommended)?.id || packages[0]?.id || null;
-        if (!selectedPackageId || !packages.some((pkg: any) => pkg.id === selectedPackageId)) {
-          return json({ error: "Choose one of the available service packages before approving." }, 400, origin);
-        }
-
-        const { error: packageSelectError } = await supabase
-          .from("quotes")
-          .update({ selected_package_id: selectedPackageId })
-          .eq("id", quote.id)
-          .eq("organization_id", ORG_ID);
-        if (packageSelectError) throw packageSelectError;
-      }
-
-      const requestedAddOns = stringArray(body.selectedAddOnIds);
-      if (requestedAddOns) {
-        const globalAddOns = sortedItems.filter((item: any) => !item.package_id && item.optional);
-        const allowedIds = new Set(globalAddOns.map((item: any) => item.id));
-        if (requestedAddOns.some((id) => !allowedIds.has(id))) {
-          return json({ error: "One or more selected add-ons are not available for this quote." }, 400, origin);
-        }
-
-        if (globalAddOns.length) {
-          const { error: resetAddOnError } = await supabase
-            .from("quote_items")
-            .update({ selected: false })
-            .eq("quote_id", quote.id)
-            .is("package_id", null)
-            .eq("optional", true);
-          if (resetAddOnError) throw resetAddOnError;
-        }
-
-        if (requestedAddOns.length) {
-          const { error: chooseAddOnError } = await supabase
-            .from("quote_items")
-            .update({ selected: true })
-            .eq("quote_id", quote.id)
-            .is("package_id", null)
-            .eq("optional", true)
-            .in("id", requestedAddOns);
-          if (chooseAddOnError) throw chooseAddOnError;
-        }
-      }
-
-      const { data: refreshedQuote, error: refreshError } = await supabase
-        .from("quotes")
-        .select("id,total,subtotal,tax_amount,selected_package_id,items:quote_items(id,package_id,name,optional,selected,sort_order)")
-        .eq("id", quote.id)
-        .single();
-      if (refreshError || !refreshedQuote) throw refreshError || new Error("Unable to refresh quote totals");
-
-      const finalPackageId = refreshedQuote.selected_package_id || null;
-      const finalItems = (refreshedQuote.items || [])
-        .filter((item: any) => {
-          const includedByScope = item.package_id ? item.package_id === finalPackageId : true;
-          return includedByScope && (!item.optional || item.selected);
-        })
-        .sort((a: any, b: any) => a.sort_order - b.sort_order);
-      const selectedPackage = packages.find((pkg: any) => pkg.id === finalPackageId) || null;
-
-      const now = new Date().toISOString();
-      const { error } = await supabase.from("quotes").update({
-        status: "approved",
-        approved_at: now,
-        approval_name: approvalName,
-      }).eq("id", quote.id);
-      if (error) throw error;
-
-      let jobId: string | null = null;
-      const { data: existingJob } = await supabase.from("jobs").select("id").eq("quote_id", quote.id).maybeSingle();
-      if (existingJob) {
-        jobId = existingJob.id;
-      } else {
-        const scope = finalItems.map((item: any) => item.name).join(", ");
-        const { data: job, error: jobError } = await supabase.from("jobs").insert({
-          organization_id: ORG_ID,
-          customer_id: quote.customer_id,
-          property_id: quote.property_id,
-          quote_id: quote.id,
-          lead_id: quote.lead_id,
-          status: "unscheduled",
-          title: selectedPackage?.name || quote.title || "Exterior Cleaning",
-          scope_of_work: scope || null,
-          quoted_total: refreshedQuote.total,
-          final_total: refreshedQuote.total,
-        }).select("id").single();
-        if (jobError) throw jobError;
-        jobId = job.id;
-      }
-
-      await supabase.from("activity_events").insert({
-        organization_id: ORG_ID,
-        actor_type: "customer",
-        customer_id: quote.customer_id,
-        entity_type: "quote",
-        entity_id: quote.id,
-        event_type: "quote.approved",
-        summary: `Quote #${quote.quote_number} approved by ${approvalName}`,
-        metadata: {
-          jobId,
-          approvalName,
-          selectedPackageId: finalPackageId,
-          selectedPackageName: selectedPackage?.name || null,
-          selectedAddOnIds: finalItems.filter((item: any) => !item.package_id && item.optional).map((item: any) => item.id),
-          total: refreshedQuote.total,
-        },
-      });
-
-      await supabase.from("automation_events").insert({
-        organization_id: ORG_ID,
-        event_type: "quote.approved",
-        entity_type: "quote",
-        entity_id: quote.id,
-        payload: {
-          quoteId: quote.id,
-          quoteNumber: quote.quote_number,
-          jobId,
-          customerName: quote.customer?.display_name || "",
-          total: refreshedQuote.total,
-          approvalName,
-          selectedPackageId: finalPackageId,
-          selectedPackageName: selectedPackage?.name || null,
-        },
-        dedupe_key: `quote.approved:${quote.id}`,
-      });
-
-      return json({ ok: true, status: "approved", jobId, total: refreshedQuote.total, selectedPackageId: finalPackageId }, 200, origin);
-    }
-
     if (action === "decline") {
       const now = new Date().toISOString();
-      const { error } = await supabase.from("quotes").update({
-        status: "declined",
-        declined_at: now,
-      }).eq("id", quote.id);
+      const { error } = await supabase.from("quotes").update({ status: "declined", declined_at: now }).eq("id", quote.id);
       if (error) throw error;
 
       await supabase.from("activity_events").insert({
