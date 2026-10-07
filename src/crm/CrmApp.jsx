@@ -12,6 +12,7 @@ import {
   Search,
   Settings,
   Users,
+  X,
 } from "lucide-react";
 import QuotePage from "./QuotePage.jsx";
 import JobPage from "./JobPage.jsx";
@@ -24,10 +25,10 @@ import {
   getLeads,
   getServices,
   getStoredSession,
+  leadAdmin,
   signIn,
   signOut,
   signUp,
-  updateLeadStatus,
 } from "./api.js";
 
 const sections = [
@@ -51,6 +52,25 @@ const statusLabel = {
   do_not_contact: "Do Not Contact",
 };
 
+const stageLabel = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  estimate_needed: "Estimate Needed",
+  quote_sent: "Quote Sent",
+  follow_up: "Follow-Up",
+  revision_needed: "Needs Revision",
+};
+
+const outcomeLabel = {
+  open: "Open",
+  won: "Won",
+  lost: "Lost",
+  do_not_contact: "Do Not Contact",
+};
+
+const manualStages = new Set(["new", "contacted", "qualified", "estimate_needed", "follow_up"]);
+
 function formatMoney(value) {
   if (value === null || value === undefined || value === "") return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
@@ -66,8 +86,26 @@ function formatDate(value, withTime = false) {
   }).format(new Date(value));
 }
 
-function StatusBadge({ children }) {
-  return <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-extrabold text-slate-600">{children}</span>;
+function StatusBadge({ children, tone = "slate" }) {
+  const tones = {
+    slate: "bg-slate-100 text-slate-600",
+    blue: "bg-blue-50 text-blue-700",
+    green: "bg-emerald-50 text-emerald-700",
+    red: "bg-red-50 text-red-700",
+    amber: "bg-amber-50 text-amber-800",
+  };
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-extrabold ${tones[tone] || tones.slate}`}>{children}</span>;
+}
+
+function leadOutcomeTone(outcome) {
+  if (outcome === "won") return "green";
+  if (["lost", "do_not_contact"].includes(outcome)) return "red";
+  return "blue";
+}
+
+function leadDisplayLabel(lead) {
+  if (lead?.outcome && lead.outcome !== "open") return outcomeLabel[lead.outcome] || lead.outcome;
+  return stageLabel[lead?.stage] || statusLabel[lead?.status] || lead?.status || "Open";
 }
 
 function EmptyState({ title, text }) {
@@ -178,7 +216,7 @@ function PageHeader({ title, eyebrow, onMenu }) {
         <button onClick={onMenu} className="rounded-xl border border-slate-200 p-2.5 lg:hidden"><Menu className="h-5 w-5" /></button>
         <div><p className="text-[10px] font-black uppercase tracking-[.2em] text-cyan-700">{eyebrow}</p><h1 className="text-xl font-black text-slate-950 sm:text-2xl">{title}</h1></div>
       </div>
-      <a href="/" className="hidden text-sm font-extrabold text-slate-500 hover:text-cyan-700 sm:block">View website ↗</a>
+      <a href="https://rinsepoint.com" target="_blank" rel="noreferrer" className="hidden text-sm font-extrabold text-slate-500 hover:text-cyan-700 sm:block">View website ↗</a>
     </header>
   );
 }
@@ -200,7 +238,7 @@ function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob
   ];
 
   const needsAttention = [
-    ...data.recentLeads.filter((lead) => lead.status === "new").map((lead) => ({ kind: "lead", id: lead.id, customerId: lead.customer?.id, title: "Review new lead", detail: `${lead.submitted_name || lead.customer?.display_name || "New customer"} · ${lead.requested_service || "Service not set"}`, status: "New lead" })),
+    ...data.recentLeads.filter((lead) => lead.outcome === "open" && lead.stage === "new").map((lead) => ({ kind: "lead", id: lead.id, customerId: lead.customer?.id, title: "Review new lead", detail: `${lead.submitted_name || lead.customer?.display_name || "New customer"} · ${lead.requested_service || "Service not set"}`, status: "New lead" })),
     ...data.actionJobs.filter((job) => job.status === "unscheduled").map((job) => ({ kind: "job", id: job.id, title: `Schedule Job #${job.job_number}`, detail: job.lead?.submitted_name || job.customer?.display_name || job.title, status: "Needs scheduling" })),
     ...data.actionInvoices.filter((invoice) => invoice.status === "draft").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Send Invoice #${invoice.invoice_number}`, detail: `${invoice.job?.lead?.submitted_name || invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.total)}`, status: "Draft" })),
     ...data.actionInvoices.filter((invoice) => invoice.status === "overdue").map((invoice) => ({ kind: "invoice", id: invoice.id, title: `Invoice #${invoice.invoice_number} overdue`, detail: `${invoice.customer?.display_name || "Customer"} · ${formatMoney(invoice.amount_due)} due`, status: "Overdue" })),
@@ -263,7 +301,7 @@ function Dashboard({ session, onOpenCustomer, onNavigate, onOpenQuote, onOpenJob
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 p-5"><div><h2 className="font-black text-slate-950">Recent requests</h2><p className="mt-1 text-sm text-slate-500">Latest customer requests, including completed history.</p></div><button onClick={() => onNavigate?.("leads")} className="text-sm font-black text-cyan-800">View all →</button></div>
-        {data.recentLeads.length ? <div className="divide-y divide-slate-100">{data.recentLeads.map((lead) => <button type="button" key={lead.id} onClick={() => onOpenCustomer?.(lead.customer?.id)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><div><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "New customer"}</p><p className="mt-1 text-sm text-slate-500">{lead.requested_service || "Service not set"} · {lead.service_city || "Location pending"}</p></div><div className="flex items-center gap-3"><StatusBadge>{statusLabel[lead.status] || lead.status}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div></button>)}</div> : <div className="p-6"><EmptyState title="No leads yet" text="Your next website quote request will appear here automatically." /></div>}
+        {data.recentLeads.length ? <div className="divide-y divide-slate-100">{data.recentLeads.map((lead) => <button type="button" key={lead.id} onClick={() => onOpenCustomer?.(lead.customer?.id)} className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><div><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "New customer"}</p><p className="mt-1 text-sm text-slate-500">{lead.requested_service || "Service not set"} · {lead.service_city || "Location pending"}</p></div><div className="flex items-center gap-3"><StatusBadge tone={lead.outcome === "open" ? "blue" : leadOutcomeTone(lead.outcome)}>{leadDisplayLabel(lead)}</StatusBadge><ChevronRight className="h-4 w-4 text-slate-300" /></div></button>)}</div> : <div className="p-6"><EmptyState title="No leads yet" text="Your next website quote request will appear here automatically." /></div>}
       </section>
     </div>
   );
@@ -273,13 +311,69 @@ function Leads({ session, onCreateQuote, onOpenCustomer }) {
   const [rows, setRows] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [closeTarget, setCloseTarget] = useState(null);
+  const [closeReason, setCloseReason] = useState("");
   const load = useCallback(() => getLeads(session).then(setRows).catch((e) => setError(e.message)), [session]);
   useEffect(() => { load(); }, [load]);
-  const filtered = useMemo(() => (rows || []).filter((lead) => [lead.submitted_name, lead.submitted_email, lead.submitted_phone, lead.customer?.display_name, lead.customer?.email, lead.customer?.phone, lead.requested_service, lead.service_city].join(" ").toLowerCase().includes(query.toLowerCase())), [rows, query]);
+  const filtered = useMemo(() => (rows || []).filter((lead) => [lead.submitted_name, lead.submitted_email, lead.submitted_phone, lead.customer?.display_name, lead.customer?.email, lead.customer?.phone, lead.requested_service, lead.service_city, stageLabel[lead.stage], outcomeLabel[lead.outcome]].join(" ").toLowerCase().includes(query.toLowerCase())), [rows, query]);
 
-  async function changeStatus(id, status) {
-    setRows((current) => current.map((row) => row.id === id ? { ...row, status } : row));
-    try { await updateLeadStatus(session, id, status); } catch (e) { setError(e.message); load(); }
+  function replaceLead(updated) {
+    setRows((current) => current.map((row) => row.id === updated.id ? { ...row, ...updated } : row));
+  }
+
+  async function changeStage(id, stage) {
+    setBusyId(id);
+    setError("");
+    setNotice("");
+    try {
+      const result = await leadAdmin(session, { action: "set_stage", leadId: id, stage });
+      replaceLead(result.lead);
+    } catch (e) {
+      setError(e.message);
+      await load();
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function closeLead() {
+    if (!closeTarget) return;
+    const { lead, action } = closeTarget;
+    if (action === "mark_lost" && !closeReason.trim()) {
+      setError("Add a reason before marking this lead lost.");
+      return;
+    }
+    setBusyId(lead.id);
+    setError("");
+    setNotice("");
+    try {
+      const result = await leadAdmin(session, { action, leadId: lead.id, reason: closeReason.trim() });
+      replaceLead(result.lead);
+      setNotice(result.cancelledQuotes ? `Lead closed and ${result.cancelledQuotes} open quote${result.cancelledQuotes === 1 ? " was" : "s were"} cancelled.` : "Lead updated.");
+      setCloseTarget(null);
+      setCloseReason("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function reopenLead(lead) {
+    setBusyId(lead.id);
+    setError("");
+    setNotice("");
+    try {
+      const result = await leadAdmin(session, { action: "reopen", leadId: lead.id });
+      replaceLead(result.lead);
+      setNotice("Lead reopened.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusyId("");
+    }
   }
 
   if (error && !rows) return <EmptyState title="Leads couldn't load" text={error} />;
@@ -289,15 +383,40 @@ function Leads({ session, onCreateQuote, onOpenCustomer }) {
         <label className="relative block max-w-md flex-1"><Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search leads…" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-cyan-600" /></label>
         <div className="text-sm font-bold text-slate-500">{rows ? `${filtered.length} lead${filtered.length === 1 ? "" : "s"}` : "Loading…"}</div>
       </div>
+      <div className="rounded-2xl border border-cyan-100 bg-cyan-50 px-5 py-4 text-sm leading-6 text-cyan-950"><strong>Stage</strong> tracks where an open lead is in the sales process. <strong>Outcome</strong> records how it ended. Won is automatic when a quote is approved.</div>
       {error && <div className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>}
+      {notice && <div className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-800">{notice}</div>}
       {!rows ? <p className="text-sm font-bold text-slate-500">Loading leads…</p> : filtered.length ? (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-[900px] w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Service</th><th className="px-5 py-4">City</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Received</th><th className="px-5 py-4"></th></tr></thead>
-            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => <tr key={lead.id} role="button" tabIndex={0} onClick={() => onOpenCustomer?.(lead.customer?.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onOpenCustomer?.(lead.customer?.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><td className="px-5 py-4"><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.submitted_email || lead.submitted_phone || lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td><td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td><td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td><td className="px-5 py-4"><select value={lead.status} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.stopPropagation(); changeStatus(lead.id, e.target.value); }} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700">{Object.entries(statusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td><td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td><td className="px-5 py-4 text-right"><button onClick={(e) => { e.stopPropagation(); onCreateQuote(lead); }} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Create quote</button></td></tr>)}</tbody>
+          <table className="min-w-[1120px] w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Service</th><th className="px-5 py-4">City</th><th className="px-5 py-4">Stage</th><th className="px-5 py-4">Outcome</th><th className="px-5 py-4">Received</th><th className="px-5 py-4"></th></tr></thead>
+            <tbody className="divide-y divide-slate-100">{filtered.map((lead) => {
+              const isOpen = lead.outcome === "open";
+              const canCreateQuote = isOpen && !["quote_sent", "revision_needed"].includes(lead.stage);
+              return <tr key={lead.id} role="button" tabIndex={0} onClick={() => onOpenCustomer?.(lead.customer?.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onOpenCustomer?.(lead.customer?.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none">
+                <td className="px-5 py-4"><p className="font-black text-slate-900">{lead.submitted_name || lead.customer?.display_name || "Unknown"}</p><p className="mt-1 text-xs text-slate-500">{lead.submitted_email || lead.submitted_phone || lead.customer?.email || lead.customer?.phone || "No contact info"}</p></td>
+                <td className="px-5 py-4 font-bold text-slate-700">{lead.requested_service || "—"}</td>
+                <td className="px-5 py-4 text-slate-600">{lead.service_city || "—"}</td>
+                <td className="px-5 py-4"><select value={lead.stage || "qualified"} disabled={!isOpen || busyId === lead.id} onClick={(e) => e.stopPropagation()} onChange={(e) => { e.stopPropagation(); changeStage(lead.id, e.target.value); }} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700 disabled:bg-slate-50 disabled:text-slate-400">{Object.entries(stageLabel).map(([value, label]) => <option key={value} value={value} disabled={!manualStages.has(value)}>{label}{manualStages.has(value) ? "" : " (auto)"}</option>)}</select></td>
+                <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                  {isOpen ? <div className="flex flex-wrap items-center gap-2"><StatusBadge tone="blue">Open</StatusBadge><button disabled={busyId === lead.id} onClick={() => { setCloseTarget({ lead, action: "mark_lost" }); setCloseReason(""); }} className="text-xs font-black text-slate-500 hover:text-red-700 disabled:opacity-50">Mark lost</button><button disabled={busyId === lead.id} onClick={() => { setCloseTarget({ lead, action: "do_not_contact" }); setCloseReason(""); }} className="text-xs font-black text-slate-500 hover:text-red-700 disabled:opacity-50">DNC</button></div> : <div className="flex flex-wrap items-center gap-2"><StatusBadge tone={leadOutcomeTone(lead.outcome)}>{outcomeLabel[lead.outcome] || lead.outcome}</StatusBadge>{["lost", "do_not_contact"].includes(lead.outcome) && <button disabled={busyId === lead.id} onClick={() => reopenLead(lead)} className="text-xs font-black text-cyan-800 disabled:opacity-50">Reopen</button>}</div>}
+                  {lead.lost_reason && !isOpen && <p className="mt-2 max-w-[220px] text-xs leading-5 text-slate-500">{lead.lost_reason}</p>}
+                </td>
+                <td className="px-5 py-4 text-slate-500">{formatDate(lead.created_at, true)}</td>
+                <td className="px-5 py-4 text-right">{canCreateQuote ? <button onClick={(e) => { e.stopPropagation(); onCreateQuote(lead); }} className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Create quote</button> : lead.stage === "quote_sent" ? <StatusBadge tone="blue">Quote sent</StatusBadge> : lead.stage === "revision_needed" ? <StatusBadge tone="amber">Revise quote</StatusBadge> : <span className="text-xs font-bold text-slate-400">Closed</span>}</td>
+              </tr>;
+            })}</tbody>
           </table>
         </div>
       ) : <EmptyState title="No matching leads" text="Try a different search, or wait for the next website request." />}
+
+      {closeTarget && <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/40 p-5" onMouseDown={(e) => { if (e.target === e.currentTarget) { setCloseTarget(null); setCloseReason(""); } }}>
+        <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.16em] text-red-600">Close lead</p><h2 className="mt-2 text-2xl font-black text-slate-950">{closeTarget.action === "mark_lost" ? "Mark this lead lost?" : "Mark do not contact?"}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{closeTarget.action === "mark_lost" ? "Any open quote for this lead will be cancelled and quote follow-ups will stop." : "This closes the lead, cancels open quotes, and prevents future follow-up from this workflow."}</p></div><button onClick={() => { setCloseTarget(null); setCloseReason(""); }} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button></div>
+          <label className="mt-5 grid gap-2 text-xs font-black uppercase tracking-wide text-slate-500">{closeTarget.action === "mark_lost" ? "Lost reason" : "Reason / note (optional)"}<textarea autoFocus rows="4" value={closeReason} onChange={(e) => setCloseReason(e.target.value)} placeholder={closeTarget.action === "mark_lost" ? "Example: price, no response, chose another company…" : "Optional note"} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
+          <div className="mt-6 flex justify-end gap-3"><button onClick={() => { setCloseTarget(null); setCloseReason(""); }} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-black text-slate-700">Cancel</button><button disabled={busyId === closeTarget.lead.id} onClick={closeLead} className="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{busyId === closeTarget.lead.id ? "Working…" : closeTarget.action === "mark_lost" ? "Mark lost" : "Do not contact"}</button></div>
+        </div>
+      </div>}
     </div>
   );
 }
