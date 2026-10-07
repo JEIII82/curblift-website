@@ -1,0 +1,81 @@
+/* RinsePoint OS shared responsive layout guardrails.
+   Detail pages should stack side rails until the actual workspace—not merely
+   the browser viewport—has enough room. This prevents sidebar + content
+   combinations from crushing panels or clipping controls. */
+
+/* Job + Invoice detail rails. */
+[class*="xl:grid-cols-[1fr_.72fr]"] {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1fr_.72fr]"] > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 1280px) and (max-width: 1535.98px) {
+  [class*="xl:grid-cols-[1fr_.72fr]"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [class*="xl:grid-cols-[1fr_.72fr]"] > aside {
+    position: static !important;
+    top: auto !important;
+    align-self: auto !important;
+    width: 100%;
+  }
+}
+
+@media (min-width: 1536px) {
+  [class*="xl:grid-cols-[1fr_.72fr]"] {
+    grid-template-columns: minmax(0, 1fr) 360px !important;
+    align-items: start;
+  }
+
+  [class*="xl:grid-cols-[1fr_.72fr]"] > aside {
+    width: 360px;
+    justify-self: stretch;
+  }
+}
+
+/* Calendar: never crop the seven-day board. Let it scroll horizontally when
+   the workspace is narrower, and stack the unscheduled rail on laptops. */
+[class*="xl:grid-cols-[1fr_300px]"] {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1fr_300px]"] > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[class*="xl:grid-cols-[1fr_300px]"] > section:first-child {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+@media (min-width: 1280px) and (max-width: 1535.98px) {
+  [class*="xl:grid-cols-[1fr_300px]"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  [class*="xl:grid-cols-[1fr_300px]"] > aside {
+    width: 100%;
+  }
+}
+
+/* Generic workspace safety: form controls and cards should never force the
+   CRM canvas wider than its available content area. */
+main input,
+main select,
+main textarea,
+main table,
+main section,
+main article {
+  max-width: 100%;
+}
+
+main > * {
+  min-width: 0;
+}
