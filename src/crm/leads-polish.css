@@ -1,0 +1,103 @@
+/* Leads table polish: presentation only. Lifecycle/state logic remains in CrmApp. */
+
+/* This table is uniquely identified by its current Leads-only min-width utility. */
+div:has(> table[class*="min-w-[1120px]"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+table[class*="min-w-[1120px]"] {
+  min-width: 980px !important;
+}
+
+table[class*="min-w-[1120px]"] th,
+table[class*="min-w-[1120px]"] td {
+  vertical-align: middle;
+}
+
+table[class*="min-w-[1120px]"] th:first-child,
+table[class*="min-w-[1120px]"] td:first-child {
+  padding-left: 1.25rem;
+}
+
+table[class*="min-w-[1120px]"] th:last-child,
+table[class*="min-w-[1120px]"] td:last-child {
+  padding-right: 1.25rem;
+  white-space: nowrap;
+}
+
+/* Closed leads read like history instead of disabled forms. */
+table[class*="min-w-[1120px]"] tr:has(select:disabled) {
+  background: #fcfdfd;
+}
+
+table[class*="min-w-[1120px]"] tr:has(select:disabled):hover {
+  background: #f8fafc;
+}
+
+table[class*="min-w-[1120px]"] select:disabled {
+  appearance: none;
+  -webkit-appearance: none;
+  border-color: transparent !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  color: #64748b !important;
+  opacity: 1 !important;
+  cursor: default;
+}
+
+/* Keep open-lead controls crisp and compact. */
+table[class*="min-w-[1120px]"] select:not(:disabled) {
+  min-width: 8.75rem;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+}
+
+table[class*="min-w-[1120px]"] td:nth-child(5) button {
+  border-radius: 9999px;
+  padding: 0.35rem 0.55rem;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+table[class*="min-w-[1120px]"] td:nth-child(5) button:hover {
+  background: #fef2f2;
+}
+
+/* Give the action rail enough breathing room without forcing a wide table. */
+table[class*="min-w-[1120px]"] td:last-child > button {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+}
+
+@media (min-width: 1280px) {
+  div:has(> table[class*="min-w-[1120px]"]) {
+    overflow-x: clip !important;
+  }
+
+  table[class*="min-w-[1120px]"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed;
+  }
+
+  table[class*="min-w-[1120px]"] th:nth-child(1),
+  table[class*="min-w-[1120px]"] td:nth-child(1) { width: 22%; }
+  table[class*="min-w-[1120px]"] th:nth-child(2),
+  table[class*="min-w-[1120px]"] td:nth-child(2) { width: 18%; }
+  table[class*="min-w-[1120px]"] th:nth-child(3),
+  table[class*="min-w-[1120px]"] td:nth-child(3) { width: 9%; }
+  table[class*="min-w-[1120px]"] th:nth-child(4),
+  table[class*="min-w-[1120px]"] td:nth-child(4) { width: 14%; }
+  table[class*="min-w-[1120px]"] th:nth-child(5),
+  table[class*="min-w-[1120px]"] td:nth-child(5) { width: 17%; }
+  table[class*="min-w-[1120px]"] th:nth-child(6),
+  table[class*="min-w-[1120px]"] td:nth-child(6) { width: 12%; }
+  table[class*="min-w-[1120px]"] th:nth-child(7),
+  table[class*="min-w-[1120px]"] td:nth-child(7) { width: 8%; }
+
+  table[class*="min-w-[1120px]"] td:nth-child(1),
+  table[class*="min-w-[1120px]"] td:nth-child(2),
+  table[class*="min-w-[1120px]"] td:nth-child(5) {
+    overflow-wrap: anywhere;
+  }
+}
