@@ -1,0 +1,44 @@
+/* Customer / Property 360 responsive layout guardrails.
+   Keep the activity rail readable instead of letting the property grid crush it. */
+
+[class*="xl:grid-cols-[1.3fr_.7fr]"] {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1.3fr_.7fr]"] > * {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1.3fr_.7fr]"] aside {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1.3fr_.7fr]"] section {
+  min-width: 0;
+}
+
+[class*="xl:grid-cols-[1.3fr_.7fr]"] p,
+[class*="xl:grid-cols-[1.3fr_.7fr]"] h3 {
+  overflow-wrap: anywhere;
+}
+
+/* At the original xl breakpoint there is not always enough usable width once
+   the navigation rail is expanded, so stack the secondary column. */
+@media (min-width: 1280px) and (max-width: 1535px) {
+  [class*="xl:grid-cols-[1.3fr_.7fr]"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* On genuinely wide layouts, reserve a proper readable width for the rail. */
+@media (min-width: 1536px) {
+  [class*="xl:grid-cols-[1.3fr_.7fr]"] {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 360px) !important;
+    align-items: start;
+  }
+}
+
+/* Property cards must be allowed to shrink and wrap inside the main column. */
+[class*="xl:grid-cols-[1.3fr_.7fr]"] [class*="md:grid-cols-2"] > * {
+  min-width: 0;
+}
