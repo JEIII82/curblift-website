@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   BadgeDollarSign,
+  BriefcaseBusiness,
+  CalendarDays,
   ChevronRight,
   CircleDollarSign,
+  FileText,
   Mail,
   MapPin,
   MessageSquareText,
@@ -53,10 +56,10 @@ const leadOutcomeLabel = {
 };
 
 function badgeClass(status) {
-  if (["paid", "completed", "closed_won", "approved", "succeeded", "won"].includes(status)) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (["paid", "completed", "approved", "succeeded", "won"].includes(status)) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
   if (["scheduled", "sent", "viewed", "quote_sent", "open"].includes(status)) return "bg-blue-50 text-blue-700 ring-blue-200";
-  if (["in_progress", "on_my_way", "changes_requested", "revision_needed", "follow_up", "partially_paid", "new"].includes(status)) return "bg-amber-50 text-amber-800 ring-amber-200";
-  if (["cancelled", "declined", "closed_lost", "lost", "do_not_contact", "overdue"].includes(status)) return "bg-red-50 text-red-700 ring-red-200";
+  if (["in_progress", "on_my_way", "changes_requested", "revision_needed", "follow_up", "partially_paid", "new", "pending"].includes(status)) return "bg-amber-50 text-amber-800 ring-amber-200";
+  if (["cancelled", "declined", "lost", "do_not_contact", "overdue", "failed"].includes(status)) return "bg-red-50 text-red-700 ring-red-200";
   return "bg-slate-100 text-slate-600 ring-slate-200";
 }
 
@@ -81,11 +84,7 @@ function Section({ title, subtitle, action, children }) {
 
 function RowButton({ onClick, children }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 text-left transition last:border-b-0 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
-    >
+    <button type="button" onClick={onClick} className="flex w-full items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 text-left transition last:border-b-0 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500">
       {children}
       <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
     </button>
@@ -94,36 +93,21 @@ function RowButton({ onClick, children }) {
 
 function getNextAction({ leads, quotes, jobs, invoices }) {
   const draftInvoice = invoices.find((invoice) => invoice.status === "draft");
-  if (draftInvoice) return {
-    type: "invoice",
-    id: draftInvoice.id,
-    eyebrow: "Needs action",
-    title: `Send Invoice #${draftInvoice.invoice_number}`,
-    text: `${money(draftInvoice.total)} is ready to invoice.`,
-    button: "Open invoice",
-  };
+  if (draftInvoice) return { type: "invoice", id: draftInvoice.id, eyebrow: "Needs action", title: `Send Invoice #${draftInvoice.invoice_number}`, text: `${money(draftInvoice.total)} is ready to invoice.`, button: "Open invoice" };
 
   const collectInvoice = invoices.find((invoice) => ["sent", "partially_paid", "overdue"].includes(invoice.status) && Number(invoice.amount_due || 0) > 0);
-  if (collectInvoice) return {
-    type: "invoice",
-    id: collectInvoice.id,
-    eyebrow: collectInvoice.status === "overdue" ? "Overdue" : "Payment due",
-    title: collectInvoice.status === "overdue" ? `Follow up on Invoice #${collectInvoice.invoice_number}` : `Collect payment on Invoice #${collectInvoice.invoice_number}`,
-    text: `${money(collectInvoice.amount_due)} is still outstanding.`,
-    button: "Open invoice",
-  };
+  if (collectInvoice) return { type: "invoice", id: collectInvoice.id, eyebrow: collectInvoice.status === "overdue" ? "Overdue" : "Payment due", title: collectInvoice.status === "overdue" ? `Follow up on Invoice #${collectInvoice.invoice_number}` : `Collect payment on Invoice #${collectInvoice.invoice_number}`, text: `${money(collectInvoice.amount_due)} is still outstanding.`, button: "Open invoice" };
 
-  const inProgress = jobs.find((job) => job.status === "in_progress");
-  if (inProgress) return { type: "job", id: inProgress.id, eyebrow: "In progress", title: `Finish Job #${inProgress.job_number}`, text: "Record completion details and move this job to invoicing.", button: "Continue job" };
-
-  const onMyWay = jobs.find((job) => job.status === "on_my_way");
-  if (onMyWay) return { type: "job", id: onMyWay.id, eyebrow: "Field workflow", title: `Start Job #${onMyWay.job_number}`, text: "You already marked yourself on the way.", button: "Continue job" };
-
-  const scheduled = jobs.find((job) => job.status === "scheduled");
-  if (scheduled) return { type: "job", id: scheduled.id, eyebrow: "Upcoming work", title: `Job #${scheduled.job_number} is scheduled`, text: scheduled.scheduled_start ? `Service is set for ${formatDate(scheduled.scheduled_start, true)}.` : "The job is scheduled.", button: "Open job" };
-
-  const unscheduled = jobs.find((job) => job.status === "unscheduled");
-  if (unscheduled) return { type: "job", id: unscheduled.id, eyebrow: "Needs scheduling", title: `Schedule Job #${unscheduled.job_number}`, text: "The quote is approved. Pick a service date and arrival window.", button: "Schedule job" };
+  const activeJob = jobs.find((job) => ["in_progress", "on_my_way", "scheduled", "unscheduled"].includes(job.status));
+  if (activeJob) {
+    const copy = {
+      in_progress: ["In progress", `Finish Job #${activeJob.job_number}`, "Record completion details and move this job to invoicing.", "Continue job"],
+      on_my_way: ["Field workflow", `Start Job #${activeJob.job_number}`, "You already marked yourself on the way.", "Continue job"],
+      scheduled: ["Upcoming work", `Job #${activeJob.job_number} is scheduled`, activeJob.scheduled_start ? `Service is set for ${formatDate(activeJob.scheduled_start, true)}.` : "The job is scheduled.", "Open job"],
+      unscheduled: ["Needs scheduling", `Schedule Job #${activeJob.job_number}`, "The quote is approved. Pick a service date and arrival window.", "Schedule job"],
+    }[activeJob.status];
+    return { type: "job", id: activeJob.id, eyebrow: copy[0], title: copy[1], text: copy[2], button: copy[3] };
+  }
 
   const changesQuote = quotes.find((quote) => quote.status === "changes_requested");
   if (changesQuote) return { type: "quote", id: changesQuote.id, eyebrow: "Quote needs changes", title: `Update Quote #${changesQuote.quote_number}`, text: "The customer asked for changes.", button: "Open quote" };
@@ -137,7 +121,80 @@ function getNextAction({ leads, quotes, jobs, invoices }) {
   return { type: "done", eyebrow: "Up to date", title: "Nothing needs action right now", text: "Completed work, billing, and history remain available below.", button: null };
 }
 
+function timelineTone(kind) {
+  if (["payment", "review"].includes(kind)) return "bg-emerald-500";
+  if (["communication", "appointment"].includes(kind)) return "bg-blue-500";
+  if (kind === "task") return "bg-amber-500";
+  return "bg-cyan-600";
+}
+
+function buildTimeline({ activity, communications, payments, appointments, tasks, reviews }) {
+  const events = [];
+
+  activity.forEach((event) => events.push({
+    key: `activity-${event.id}`,
+    kind: event.entity_type || "activity",
+    date: event.created_at,
+    title: event.summary || titleCase(event.event_type),
+    detail: titleCase(event.event_type),
+    entityType: event.entity_type,
+    entityId: event.entity_id,
+  }));
+
+  communications.forEach((item) => events.push({
+    key: `communication-${item.id}`,
+    kind: "communication",
+    date: item.sent_at || item.received_at || item.created_at,
+    title: item.subject || `${titleCase(item.channel)} ${titleCase(item.direction)}`,
+    detail: item.body || `${titleCase(item.channel)} · ${titleCase(item.status)}`,
+    quoteId: item.quote_id,
+    jobId: item.job_id,
+    invoiceId: item.invoice_id,
+  }));
+
+  payments.forEach((payment) => events.push({
+    key: `payment-${payment.id}`,
+    kind: "payment",
+    date: payment.paid_at || payment.created_at,
+    title: `${money(payment.amount)} payment ${payment.status === "succeeded" ? "received" : titleCase(payment.status)}`,
+    detail: titleCase(payment.method || payment.provider || "payment"),
+    invoiceId: payment.invoice_id,
+  }));
+
+  appointments.forEach((appointment) => events.push({
+    key: `appointment-${appointment.id}`,
+    kind: "appointment",
+    date: appointment.starts_at || appointment.created_at,
+    title: appointment.job ? `Job #${appointment.job.job_number} appointment` : "Customer appointment",
+    detail: `${formatDate(appointment.starts_at, true)} · ${titleCase(appointment.status)}`,
+    jobId: appointment.job_id || appointment.job?.id,
+  }));
+
+  tasks.forEach((task) => events.push({
+    key: `task-${task.id}`,
+    kind: "task",
+    date: task.completed_at || task.due_at || task.created_at,
+    title: task.title,
+    detail: task.description || (task.due_at ? `Due ${formatDate(task.due_at, true)}` : titleCase(task.status)),
+    quoteId: task.quote_id,
+    jobId: task.job_id,
+    invoiceId: task.invoice_id,
+  }));
+
+  reviews.forEach((review) => events.push({
+    key: `review-${review.id}`,
+    kind: "review",
+    date: review.received_at || review.requested_at || review.created_at,
+    title: `${titleCase(review.platform || "customer")} review ${review.received_at ? "received" : titleCase(review.status)}`,
+    detail: review.rating ? `${review.rating}/5 rating` : review.requested_at ? `Requested ${formatDate(review.requested_at)}` : titleCase(review.status),
+    jobId: review.job_id,
+  }));
+
+  return events.filter((event) => event.date).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
 function EditCustomer({ customer, onCancel, onSaved, session }) {
+  const smsAllowed = Boolean(customer.sms_consent_at && !customer.sms_opt_out_at);
   const [form, setForm] = useState({
     first_name: customer.first_name || "",
     last_name: customer.last_name || "",
@@ -184,7 +241,7 @@ function EditCustomer({ customer, onCancel, onSaved, session }) {
         <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
         <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Phone<input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
         <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Company<input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
-        <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Preferred contact<select value={form.preferred_contact} onChange={(e) => setForm({ ...form, preferred_contact: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600"><option value="email">Email</option><option value="phone">Phone</option><option value="sms">Text</option></select></label>
+        <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Preferred contact<select value={form.preferred_contact} onChange={(e) => setForm({ ...form, preferred_contact: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600"><option value="email">Email</option><option value="phone">Phone</option><option value="sms" disabled={!smsAllowed}>Text{smsAllowed ? "" : " (no SMS consent)"}</option></select></label>
       </div>
       <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Tags<input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="Residential, VIP, Repeat" className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
       <label className="grid gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500">Internal notes<textarea rows="4" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal text-slate-900 outline-none focus:border-cyan-600" /></label>
@@ -193,11 +250,43 @@ function EditCustomer({ customer, onCancel, onSaved, session }) {
   );
 }
 
+function PropertyCard({ property, leads, quotes, jobs }) {
+  const propertyLeads = leads.filter((lead) => lead.property?.id === property.id);
+  const propertyQuotes = quotes.filter((quote) => quote.property?.id === property.id);
+  const propertyJobs = jobs.filter((job) => job.property?.id === property.id);
+  const completed = propertyJobs.filter((job) => job.status === "completed");
+  const lastService = [...completed].sort((a, b) => new Date(b.completed_at || b.actual_end || b.created_at) - new Date(a.completed_at || a.actual_end || a.created_at))[0];
+  const address = [property.address_line1, property.address_line2, property.city, property.state, property.postal_code].filter(Boolean).join(", ");
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <div className="flex flex-wrap items-center gap-2"><h4 className="font-black text-slate-950">{property.label || "Service property"}</h4>{property.is_primary && <Badge status="open" label="Primary" />}</div>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">{address || "Address incomplete"}</p>
+        </div>
+        {address && <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} className="inline-flex shrink-0 items-center gap-2 text-sm font-black text-cyan-800"><MapPin className="h-4 w-4" /> Directions ↗</a>}
+      </div>
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Requests</p><p className="mt-1 text-lg font-black text-slate-950">{propertyLeads.length}</p></div>
+        <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Quotes</p><p className="mt-1 text-lg font-black text-slate-950">{propertyQuotes.length}</p></div>
+        <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Jobs</p><p className="mt-1 text-lg font-black text-slate-950">{propertyJobs.length}</p></div>
+      </div>
+      <div className="mt-4 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+        <p><strong className="text-slate-700">Last service:</strong> {lastService ? formatDate(lastService.completed_at || lastService.actual_end || lastService.created_at) : "No completed service yet"}</p>
+        <p><strong className="text-slate-700">Completed jobs:</strong> {completed.length}</p>
+      </div>
+      {(property.access_notes || property.property_notes) && <div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900"><strong>Property notes:</strong> {property.access_notes || property.property_notes}</div>}
+    </article>
+  );
+}
+
 function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, onOpenInvoice, onCreateQuote }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("overview");
   const [editing, setEditing] = useState(false);
+  const [timelineFilter, setTimelineFilter] = useState("all");
 
   async function load() {
     const result = await getCustomerWorkspace(session, customerId);
@@ -224,6 +313,16 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
   const nextAction = getNextAction({ leads, quotes, jobs, invoices });
   const upcoming = appointments.filter((appointment) => appointment.starts_at && new Date(appointment.starts_at) >= new Date()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
   const primaryProperty = properties.find((property) => property.is_primary) || properties[0];
+  const timeline = buildTimeline({ activity, communications, payments, appointments, tasks, reviews });
+  const timelineFilters = [
+    ["all", "All"],
+    ["communication", "Messages"],
+    ["quote", "Quotes"],
+    ["job", "Jobs"],
+    ["invoice", "Billing"],
+    ["task", "Tasks"],
+  ];
+  const visibleTimeline = timelineFilter === "all" ? timeline : timeline.filter((item) => item.kind === timelineFilter || (timelineFilter === "invoice" && item.kind === "payment"));
 
   function continueWorkflow() {
     if (nextAction.type === "invoice") onOpenInvoice?.(nextAction.id);
@@ -232,34 +331,43 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
     if (nextAction.type === "lead") onCreateQuote?.({ ...nextAction.lead, customer });
   }
 
-  const tabs = [["overview", "Overview"], ["work", "Work"], ["billing", "Billing"], ["activity", "Activity"]];
+  function openTimelineItem(item) {
+    const entityType = item.entityType;
+    if (item.quoteId) return onOpenQuote?.(item.quoteId);
+    if (item.jobId) return onOpenJob?.(item.jobId);
+    if (item.invoiceId) return onOpenInvoice?.(item.invoiceId);
+    if (entityType === "quote") return onOpenQuote?.(item.entityId);
+    if (entityType === "job") return onOpenJob?.(item.entityId);
+    if (entityType === "invoice") return onOpenInvoice?.(item.entityId);
+  }
+
+  const tabs = [["overview", "Overview"], ["timeline", "Timeline"], ["work", "Work"], ["billing", "Billing"]];
 
   return (
     <div className="grid gap-5">
       <button onClick={onBack} className="inline-flex w-fit items-center gap-2 text-sm font-black text-cyan-800"><ArrowLeft className="h-4 w-4" /> Customers</button>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col justify-between gap-5 p-5 lg:flex-row lg:items-start">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#e9f6fb] text-cyan-800"><UserRound className="h-7 w-7" /></div>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col justify-between gap-6 p-5 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#08243f] text-white"><UserRound className="h-7 w-7" /></div>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-3xl font-black text-slate-950">{customer.display_name || "Customer"}</h2>
-                {(customer.tags || []).map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{tag}</span>)}
-              </div>
+              <div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black text-slate-950">{customer.display_name}</h2>{(customer.tags || []).map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{tag}</span>)}</div>
               <p className="mt-1 text-sm text-slate-500">{customer.company_name || (primaryProperty ? [primaryProperty.address_line1, primaryProperty.city].filter(Boolean).join(" · ") : "No service address yet")}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {customer.phone && <a href={`tel:${customer.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-black text-slate-700"><Phone className="h-4 w-4" /> Call</a>}
-                {customer.phone && <a href={`sms:${customer.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-black text-slate-700"><MessageSquareText className="h-4 w-4" /> Text</a>}
+                {customer.phone && customer.sms_consent_at && !customer.sms_opt_out_at && <a href={`sms:${customer.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-black text-slate-700"><MessageSquareText className="h-4 w-4" /> Text</a>}
                 {customer.email && <a href={`mailto:${customer.email}`} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-black text-slate-700"><Mail className="h-4 w-4" /> Email</a>}
                 <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-black text-slate-700"><Pencil className="h-4 w-4" /> Edit</button>
               </div>
             </div>
           </div>
 
-          <div className="grid min-w-[260px] grid-cols-2 gap-3">
-            <div className="rounded-xl bg-slate-50 p-4"><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Lifetime value</p><p className="mt-2 text-xl font-black text-slate-950">{money(paidTotal)}</p></div>
+          <div className="grid min-w-[280px] grid-cols-2 gap-3">
+            <div className="rounded-xl bg-slate-50 p-4"><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Lifetime paid</p><p className="mt-2 text-xl font-black text-slate-950">{money(paidTotal)}</p></div>
             <div className="rounded-xl bg-slate-50 p-4"><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Open balance</p><p className="mt-2 text-xl font-black text-slate-950">{money(openBalance)}</p></div>
+            <div className="rounded-xl bg-slate-50 p-4"><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Properties</p><p className="mt-2 text-xl font-black text-slate-950">{properties.length}</p></div>
+            <div className="rounded-xl bg-slate-50 p-4"><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Jobs</p><p className="mt-2 text-xl font-black text-slate-950">{jobs.length}</p></div>
           </div>
         </div>
 
@@ -268,80 +376,69 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
         </div>
       </section>
 
-      {editing && (
-        <Section title="Edit customer" subtitle="Keep the permanent customer profile current." action={<button onClick={() => setEditing(false)} className="text-slate-400"><X className="h-5 w-5" /></button>}>
-          <EditCustomer customer={customer} session={session} onCancel={() => setEditing(false)} onSaved={async () => { setEditing(false); await load(); }} />
-        </Section>
-      )}
+      {editing && <Section title="Edit customer" subtitle="Keep the permanent customer profile current." action={<button onClick={() => setEditing(false)} className="text-slate-400"><X className="h-5 w-5" /></button>}><EditCustomer customer={customer} session={session} onCancel={() => setEditing(false)} onSaved={async () => { setEditing(false); await load(); }} /></Section>}
 
       {tab === "overview" && (
-        <div className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
-          <div className="grid content-start gap-5">
-            <section className={`rounded-2xl border p-5 shadow-sm ${nextAction.type === "done" ? "border-emerald-200 bg-emerald-50" : "border-cyan-200 bg-cyan-50"}`}>
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div><p className={`text-xs font-black uppercase tracking-[.16em] ${nextAction.type === "done" ? "text-emerald-700" : "text-cyan-700"}`}>{nextAction.eyebrow}</p><h3 className="mt-2 text-xl font-black text-slate-950">{nextAction.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{nextAction.text}</p></div>
-                {nextAction.button && <button onClick={continueWorkflow} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#08243f] px-5 py-3.5 text-sm font-black text-white">{nextAction.button}<ChevronRight className="h-4 w-4" /></button>}
-              </div>
-            </section>
+        <div className="grid gap-5">
+          <section className={`rounded-2xl border p-5 shadow-sm ${nextAction.type === "done" ? "border-emerald-200 bg-emerald-50" : "border-cyan-200 bg-cyan-50"}`}>
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div><p className={`text-xs font-black uppercase tracking-[.16em] ${nextAction.type === "done" ? "text-emerald-700" : "text-cyan-700"}`}>{nextAction.eyebrow}</p><h3 className="mt-2 text-xl font-black text-slate-950">{nextAction.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{nextAction.text}</p></div>
+              {nextAction.button && <button onClick={continueWorkflow} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#08243f] px-5 py-3.5 text-sm font-black text-white">{nextAction.button}<ChevronRight className="h-4 w-4" /></button>}
+            </div>
+          </section>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Jobs</p><p className="mt-3 text-3xl font-black text-slate-950">{jobs.length}</p><p className="mt-2 text-sm text-slate-500">{completedJobs} completed</p></div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Quotes</p><p className="mt-3 text-3xl font-black text-slate-950">{quotes.length}</p><p className="mt-2 text-sm text-slate-500">{quotes.filter((quote) => quote.status === "approved").length} approved</p></div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-[.14em] text-slate-400">Invoices</p><p className="mt-3 text-3xl font-black text-slate-950">{invoices.length}</p><p className="mt-2 text-sm text-slate-500">{invoices.filter((invoice) => invoice.status === "paid").length} paid</p></div>
+          <div className="grid gap-5 xl:grid-cols-[1.3fr_.7fr]">
+            <div className="grid content-start gap-5">
+              <Section title="Properties" subtitle="Every service location keeps its own request, quote, and job context.">
+                <div className="grid gap-4 p-4 md:grid-cols-2">{properties.length ? properties.map((property) => <PropertyCard key={property.id} property={property} leads={leads} quotes={quotes} jobs={jobs} />) : <div className="p-2 text-sm text-slate-500">No property saved.</div>}</div>
+              </Section>
+
+              <Section title="Recent timeline" subtitle="The latest customer, sales, field, and billing activity." action={<button onClick={() => setTab("timeline")} className="text-xs font-black text-cyan-800">View all</button>}>
+                {timeline.length ? timeline.slice(0, 8).map((item) => {
+                  const clickable = item.quoteId || item.jobId || item.invoiceId || ["quote", "job", "invoice"].includes(item.entityType);
+                  return <button type="button" key={item.key} disabled={!clickable} onClick={() => openTimelineItem(item)} className={`flex w-full gap-4 border-b border-slate-100 p-5 text-left last:border-b-0 ${clickable ? "hover:bg-slate-50" : "cursor-default"}`}><span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${timelineTone(item.kind)}`} /><span className="min-w-0 flex-1"><span className="block font-bold text-slate-800">{item.title}</span>{item.detail && <span className="mt-1 line-clamp-2 block text-sm text-slate-500">{item.detail}</span>}<span className="mt-2 block text-xs text-slate-400">{formatDate(item.date, true)}</span></span>{clickable && <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300" />}</button>;
+                }) : <div className="p-5 text-sm text-slate-500">No activity recorded yet.</div>}
+              </Section>
             </div>
 
-            <Section title="Upcoming schedule" subtitle="The next visits and appointments for this customer.">
-              {upcoming.length ? upcoming.slice(0, 5).map((appointment) => (
-                <RowButton key={appointment.id} onClick={() => appointment.job?.id && onOpenJob?.(appointment.job.id)}>
-                  <div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{appointment.job ? `Job #${appointment.job.job_number} · ${appointment.job.title}` : "Appointment"}</p><Badge status={appointment.status} /></div><p className="mt-1 text-sm text-slate-500">{formatDate(appointment.starts_at, true)}{appointment.ends_at ? ` – ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(appointment.ends_at))}` : ""}</p></div>
-                </RowButton>
-              )) : <div className="p-5 text-sm text-slate-500">No upcoming appointments.</div>}
-            </Section>
+            <aside className="grid content-start gap-5">
+              <Section title="Contact & preferences" action={<button onClick={() => setEditing(true)} className="text-xs font-black text-cyan-800">Edit</button>}>
+                <div className="grid gap-4 p-5 text-sm">
+                  <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Email</p><p className="mt-1 break-words font-bold text-slate-800">{customer.email || "No email on file"}</p></div>
+                  <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Phone</p><p className="mt-1 font-bold text-slate-800">{customer.phone || "No phone on file"}</p></div>
+                  <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Preferred contact</p><p className="mt-1 font-bold text-slate-800">{titleCase(customer.preferred_contact)}</p></div>
+                  <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">SMS</p><p className="mt-1 font-bold text-slate-800">{customer.sms_opt_out_at ? "Opted out" : customer.sms_consent_at ? "Consented" : "No consent recorded"}</p></div>
+                  <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Lead source</p><p className="mt-1 font-bold text-slate-800">{titleCase(customer.lead_source)}</p></div>
+                </div>
+              </Section>
 
-            <Section title="Recent work" subtitle="The latest jobs, quotes, and invoices.">
-              {[...jobs.slice(0, 2).map((item) => ({ kind: "job", date: item.created_at, item })), ...quotes.slice(0, 2).map((item) => ({ kind: "quote", date: item.created_at, item })), ...invoices.slice(0, 2).map((item) => ({ kind: "invoice", date: item.created_at, item }))].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5).map(({ kind, item }) => (
-                <RowButton key={`${kind}-${item.id}`} onClick={() => kind === "job" ? onOpenJob?.(item.id) : kind === "quote" ? onOpenQuote?.(item.id) : onOpenInvoice?.(item.id)}>
-                  <div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{kind === "job" ? `Job #${item.job_number} · ${item.title}` : kind === "quote" ? `Quote #${item.quote_number} · ${item.title}` : `Invoice #${item.invoice_number}`}</p><Badge status={item.status} /></div><p className="mt-1 text-sm text-slate-500">{formatDate(item.created_at)}{kind === "invoice" ? ` · ${money(item.total)}` : kind === "quote" ? ` · ${money(item.total)}` : item.quoted_total ? ` · ${money(item.final_total ?? item.quoted_total)}` : ""}</p></div>
-                </RowButton>
-              ))}
-            </Section>
+              <Section title="Upcoming schedule" subtitle="Next visits for this customer.">
+                {upcoming.length ? upcoming.slice(0, 4).map((appointment) => <RowButton key={appointment.id} onClick={() => appointment.job?.id && onOpenJob?.(appointment.job.id)}><div><p className="font-black text-slate-900">{appointment.job ? `Job #${appointment.job.job_number} · ${appointment.job.title}` : "Appointment"}</p><p className="mt-1 text-sm text-slate-500">{formatDate(appointment.starts_at, true)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No upcoming appointments.</div>}
+              </Section>
+
+              <Section title="Internal notes" action={<button onClick={() => setEditing(true)} className="text-xs font-black text-cyan-800">Edit</button>}><div className="p-5 text-sm leading-6 text-slate-600">{customer.notes || "No customer-level notes yet."}</div></Section>
+            </aside>
           </div>
+        </div>
+      )}
 
-          <aside className="grid content-start gap-5">
-            <Section title="Contact" action={<button onClick={() => setEditing(true)} className="text-xs font-black text-cyan-800">Edit</button>}>
-              <div className="grid gap-4 p-5 text-sm">
-                <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Email</p><p className="mt-1 break-words font-bold text-slate-800">{customer.email || "No email on file"}</p></div>
-                <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Phone</p><p className="mt-1 font-bold text-slate-800">{customer.phone || "No phone on file"}</p></div>
-                <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Preferred contact</p><p className="mt-1 font-bold text-slate-800">{titleCase(customer.preferred_contact)}</p></div>
-                <div><p className="text-[11px] font-black uppercase tracking-[.14em] text-slate-400">Lead source</p><p className="mt-1 font-bold text-slate-800">{titleCase(customer.lead_source)}</p></div>
-              </div>
-            </Section>
-
-            <Section title="Properties" subtitle="Service locations for this customer.">
-              <div className="divide-y divide-slate-100">
-                {properties.length ? properties.map((property) => <div key={property.id} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-900">{property.label || (property.is_primary ? "Primary property" : "Service property")}</p><p className="mt-1 text-sm leading-6 text-slate-500">{property.address_line1}{property.address_line2 ? `, ${property.address_line2}` : ""}<br />{property.city}, {property.state} {property.postal_code}</p></div>{property.is_primary && <span className="rounded-full bg-cyan-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-cyan-700">Primary</span>}</div>{(property.access_notes || property.property_notes) && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">{property.access_notes || property.property_notes}</p>}</div>) : <div className="p-5 text-sm text-slate-500">No property saved.</div>}
-              </div>
-              {primaryProperty && <div className="border-t border-slate-100 p-4"><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([primaryProperty.address_line1, primaryProperty.city, primaryProperty.state, primaryProperty.postal_code].filter(Boolean).join(", "))}`} className="inline-flex items-center gap-2 text-sm font-black text-cyan-800"><MapPin className="h-4 w-4" /> Directions ↗</a></div>}
-            </Section>
-
-            <Section title="Internal notes" action={<button onClick={() => setEditing(true)} className="text-xs font-black text-cyan-800">Edit</button>}>
-              <div className="p-5 text-sm leading-6 text-slate-600">{customer.notes || "No customer-level notes yet."}</div>
-            </Section>
-          </aside>
+      {tab === "timeline" && (
+        <div className="grid gap-5">
+          <div className="flex flex-wrap gap-2">{timelineFilters.map(([id, label]) => <button key={id} onClick={() => setTimelineFilter(id)} className={`rounded-full px-4 py-2 text-xs font-black transition ${timelineFilter === id ? "bg-[#08243f] text-white" : "border border-slate-200 bg-white text-slate-600 hover:border-cyan-300"}`}>{label}</button>)}</div>
+          <Section title="Unified timeline" subtitle="Messages, quote/job events, appointments, payments, tasks, and reviews in one chronological feed.">
+            {visibleTimeline.length ? visibleTimeline.map((item) => {
+              const clickable = item.quoteId || item.jobId || item.invoiceId || ["quote", "job", "invoice"].includes(item.entityType);
+              return <button type="button" key={item.key} disabled={!clickable} onClick={() => openTimelineItem(item)} className={`flex w-full gap-4 border-b border-slate-100 p-5 text-left last:border-b-0 ${clickable ? "hover:bg-slate-50" : "cursor-default"}`}><span className={`mt-1.5 h-3 w-3 shrink-0 rounded-full ring-4 ring-white ${timelineTone(item.kind)}`} /><span className="min-w-0 flex-1"><span className="flex flex-wrap items-center gap-2"><strong className="text-slate-900">{item.title}</strong><span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-500">{titleCase(item.kind)}</span></span>{item.detail && <span className="mt-1 line-clamp-3 block text-sm leading-6 text-slate-500">{item.detail}</span>}<span className="mt-2 block text-xs text-slate-400">{formatDate(item.date, true)}</span></span>{clickable && <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-300" />}</button>;
+            }) : <div className="p-8 text-center text-sm text-slate-500">No activity matches this filter.</div>}
+          </Section>
         </div>
       )}
 
       {tab === "work" && (
-        <div className="grid gap-5">
-          <Section title="Jobs" subtitle="All scheduled, active, and completed work.">
-            {jobs.length ? jobs.map((job) => <RowButton key={job.id} onClick={() => onOpenJob?.(job.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Job #{job.job_number} · {job.title}</p><Badge status={job.status} /></div><p className="mt-1 text-sm text-slate-500">{job.scheduled_start ? formatDate(job.scheduled_start, true) : "Not scheduled"} · {money(job.final_total ?? job.quoted_total)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No jobs yet.</div>}
-          </Section>
-          <Section title="Quotes" subtitle="Estimate and approval history.">
-            {quotes.length ? quotes.map((quote) => <RowButton key={quote.id} onClick={() => onOpenQuote?.(quote.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Quote #{quote.quote_number} · {quote.title}</p><Badge status={quote.status} /></div><p className="mt-1 text-sm text-slate-500">{formatDate(quote.created_at)} · {money(quote.total)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No quotes yet.</div>}
-          </Section>
-          <Section title="Requests / leads" subtitle="Sales stage and final outcome stay visible even after the work is won or completed.">
-            {leads.length ? leads.map((lead) => <div key={lead.id} className="border-b border-slate-100 p-5 last:border-b-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{lead.requested_service || "Service request"}</p><Badge status={lead.stage} label={`Stage: ${leadStageLabel[lead.stage] || titleCase(lead.stage)}`} /><Badge status={lead.outcome} label={`Outcome: ${leadOutcomeLabel[lead.outcome] || titleCase(lead.outcome)}`} /></div><p className="mt-1 text-sm text-slate-500">Submitted {formatDate(lead.created_at, true)}{lead.submitted_name ? ` as ${lead.submitted_name}` : ""}</p>{lead.lost_reason && lead.outcome !== "open" && <p className="mt-2 text-xs font-bold text-red-700">Reason: {lead.lost_reason}</p>}{lead.project_details && <p className="mt-3 text-sm leading-6 text-slate-600">{lead.project_details}</p>}</div>) : <div className="p-5 text-sm text-slate-500">No lead history.</div>}
-          </Section>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Section title="Jobs" subtitle="Scheduled, active, and completed work.">{jobs.length ? jobs.map((job) => <RowButton key={job.id} onClick={() => onOpenJob?.(job.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Job #{job.job_number} · {job.title}</p><Badge status={job.status} /></div><p className="mt-1 text-sm text-slate-500">{job.property?.address_line1 || "Property pending"} · {job.scheduled_start ? formatDate(job.scheduled_start, true) : "Not scheduled"} · {money(job.final_total ?? job.quoted_total)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No jobs yet.</div>}</Section>
+          <Section title="Quotes" subtitle="Estimate and approval history.">{quotes.length ? quotes.map((quote) => <RowButton key={quote.id} onClick={() => onOpenQuote?.(quote.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Quote #{quote.quote_number} · {quote.title}</p><Badge status={quote.status} /></div><p className="mt-1 text-sm text-slate-500">{quote.property?.address_line1 || "Property pending"} · {formatDate(quote.created_at)} · {money(quote.total)}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No quotes yet.</div>}</Section>
+          <Section title="Requests / leads" subtitle="Sales stage and final outcome stay visible after conversion."><div className="xl:col-span-2">{leads.length ? leads.map((lead) => <div key={lead.id} className="border-b border-slate-100 p-5 last:border-b-0"><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{lead.requested_service || "Service request"}</p><Badge status={lead.stage} label={`Stage: ${leadStageLabel[lead.stage] || titleCase(lead.stage)}`} /><Badge status={lead.outcome} label={`Outcome: ${leadOutcomeLabel[lead.outcome] || titleCase(lead.outcome)}`} /></div><p className="mt-1 text-sm text-slate-500">{lead.property?.address_line1 || lead.service_city || "Property pending"} · Submitted {formatDate(lead.created_at, true)}</p>{lead.lost_reason && lead.outcome !== "open" && <p className="mt-2 text-xs font-bold text-red-700">Reason: {lead.lost_reason}</p>}{lead.project_details && <p className="mt-3 text-sm leading-6 text-slate-600">{lead.project_details}</p>}</div>) : <div className="p-5 text-sm text-slate-500">No lead history.</div>}</div></Section>
         </div>
       )}
 
@@ -352,29 +449,10 @@ function CustomerDetail({ session, customerId, onBack, onOpenQuote, onOpenJob, o
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><CircleDollarSign className="h-5 w-5 text-cyan-700" /><p className="mt-4 text-xs font-black uppercase tracking-[.14em] text-slate-400">Open balance</p><p className="mt-2 text-3xl font-black text-slate-950">{money(openBalance)}</p></div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><ReceiptText className="h-5 w-5 text-cyan-700" /><p className="mt-4 text-xs font-black uppercase tracking-[.14em] text-slate-400">Invoices</p><p className="mt-2 text-3xl font-black text-slate-950">{invoices.length}</p></div>
           </div>
-          <Section title="Invoices">
-            {invoices.length ? invoices.map((invoice) => <RowButton key={invoice.id} onClick={() => onOpenInvoice?.(invoice.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Invoice #{invoice.invoice_number}</p><Badge status={invoice.status} /></div><p className="mt-1 text-sm text-slate-500">{money(invoice.total)} total · {money(invoice.amount_due)} due{invoice.due_at ? ` · Due ${formatDate(invoice.due_at)}` : ""}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No invoices yet.</div>}
-          </Section>
-          <Section title="Payments">
-            {payments.length ? payments.map((payment) => <div key={payment.id} className="flex items-center justify-between gap-4 border-b border-slate-100 p-5 last:border-b-0"><div><p className="font-black text-slate-900">{money(payment.amount)}</p><p className="mt-1 text-sm text-slate-500">{titleCase(payment.method || payment.provider)} · {formatDate(payment.paid_at || payment.created_at, true)}</p></div><Badge status={payment.status} /></div>) : <div className="p-5 text-sm text-slate-500">No payments recorded.</div>}
-          </Section>
-        </div>
-      )}
-
-      {tab === "activity" && (
-        <div className="grid gap-5 xl:grid-cols-2">
-          <Section title="Communication" subtitle="Emails and texts tied to this customer.">
-            {communications.length ? communications.map((item) => <div key={item.id} className="border-b border-slate-100 p-5 last:border-b-0"><div className="flex items-center justify-between gap-3"><p className="font-black text-slate-900">{titleCase(item.channel)} · {titleCase(item.direction)}</p><span className="text-xs text-slate-400">{formatDate(item.sent_at || item.received_at || item.created_at, true)}</span></div>{item.subject && <p className="mt-2 text-sm font-bold text-slate-700">{item.subject}</p>}<p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">{item.body || "No message body recorded."}</p></div>) : <div className="p-5 text-sm text-slate-500">No communication history yet.</div>}
-          </Section>
-          <Section title="Timeline" subtitle="Important activity across this customer's workflow.">
-            {activity.length ? activity.slice(0, 30).map((event) => <div key={event.id} className="flex gap-3 border-b border-slate-100 p-5 last:border-b-0"><div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-600" /><div><p className="font-bold text-slate-800">{event.summary || titleCase(event.event_type)}</p><p className="mt-1 text-xs text-slate-400">{formatDate(event.created_at, true)}</p></div></div>) : <div className="p-5 text-sm text-slate-500">No activity recorded.</div>}
-          </Section>
-          <Section title="Tasks" subtitle="Follow-ups and operational reminders.">
-            {tasks.length ? tasks.map((task) => <div key={task.id} className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 last:border-b-0"><div><p className="font-black text-slate-900">{task.title}</p>{task.description && <p className="mt-1 text-sm text-slate-500">{task.description}</p>}<p className="mt-2 text-xs text-slate-400">{task.due_at ? `Due ${formatDate(task.due_at, true)}` : "No due date"}</p></div><Badge status={task.status} /></div>) : <div className="p-5 text-sm text-slate-500">No open tasks.</div>}
-          </Section>
-          <Section title="Reviews" subtitle="Review request and feedback history.">
-            {reviews.length ? reviews.map((review) => <div key={review.id} className="flex items-center justify-between gap-4 border-b border-slate-100 p-5 last:border-b-0"><div><p className="font-black text-slate-900">{titleCase(review.platform)} review</p><p className="mt-1 text-sm text-slate-500">{review.received_at ? `Received ${formatDate(review.received_at)}` : review.requested_at ? `Requested ${formatDate(review.requested_at)}` : "Not requested yet"}</p></div><Badge status={review.status} /></div>) : <div className="p-5 text-sm text-slate-500">No review history.</div>}
-          </Section>
+          <div className="grid gap-5 xl:grid-cols-2">
+            <Section title="Invoices">{invoices.length ? invoices.map((invoice) => <RowButton key={invoice.id} onClick={() => onOpenInvoice?.(invoice.id)}><div><div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">Invoice #{invoice.invoice_number}</p><Badge status={invoice.status} /></div><p className="mt-1 text-sm text-slate-500">{money(invoice.total)} total · {money(invoice.amount_due)} due{invoice.due_at ? ` · Due ${formatDate(invoice.due_at)}` : ""}</p></div></RowButton>) : <div className="p-5 text-sm text-slate-500">No invoices yet.</div>}</Section>
+            <Section title="Payments">{payments.length ? payments.map((payment) => <div key={payment.id} className="flex items-center justify-between gap-4 border-b border-slate-100 p-5 last:border-b-0"><div><p className="font-black text-slate-900">{money(payment.amount)}</p><p className="mt-1 text-sm text-slate-500">{titleCase(payment.method || payment.provider)} · {formatDate(payment.paid_at || payment.created_at, true)}</p></div><Badge status={payment.status} /></div>) : <div className="p-5 text-sm text-slate-500">No payments recorded.</div>}</Section>
+          </div>
         </div>
       )}
     </div>
@@ -404,20 +482,9 @@ export default function CustomerPage({ session, initialCustomerId, onInitialCust
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-[900px] w-full text-left text-sm">
+        <table className="min-w-[820px] w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-black uppercase tracking-[.12em] text-slate-400"><tr><th className="px-5 py-4">Customer</th><th className="px-5 py-4">Contact</th><th className="px-5 py-4">Tags</th><th className="px-5 py-4">Source</th><th className="px-5 py-4">Customer since</th><th className="w-12 px-5 py-4"></th></tr></thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.map((customer) => (
-              <tr key={customer.id} role="button" tabIndex={0} onClick={() => setSelectedId(customer.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedId(customer.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none">
-                <td className="px-5 py-4"><p className="font-black text-slate-900">{customer.display_name || "Customer"}</p>{customer.company_name && <p className="mt-1 text-xs text-slate-500">{customer.company_name}</p>}</td>
-                <td className="px-5 py-4"><p className="text-slate-700">{customer.email || "No email"}</p><p className="mt-1 text-xs text-slate-500">{customer.phone || "No phone"}</p></td>
-                <td className="px-5 py-4"><div className="flex flex-wrap gap-1">{(customer.tags || []).length ? customer.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{tag}</span>) : <span className="text-slate-400">—</span>}</div></td>
-                <td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{titleCase(customer.lead_source)}</span></td>
-                <td className="px-5 py-4 text-slate-500">{formatDate(customer.created_at)}</td>
-                <td className="px-5 py-4"><ChevronRight className="h-4 w-4 text-slate-300" /></td>
-              </tr>
-            ))}
-          </tbody>
+          <tbody className="divide-y divide-slate-100">{filtered.map((customer) => <tr key={customer.id} role="button" tabIndex={0} onClick={() => setSelectedId(customer.id)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedId(customer.id); }} className="cursor-pointer transition hover:bg-slate-50 focus:bg-cyan-50 focus:outline-none"><td className="px-5 py-4"><p className="font-black text-slate-900">{customer.display_name || "Customer"}</p>{customer.company_name && <p className="mt-1 text-xs text-slate-500">{customer.company_name}</p>}</td><td className="px-5 py-4"><p className="text-slate-700">{customer.email || "No email"}</p><p className="mt-1 text-xs text-slate-500">{customer.phone || "No phone"}</p></td><td className="px-5 py-4"><div className="flex flex-wrap gap-1">{(customer.tags || []).length ? customer.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{tag}</span>) : <span className="text-slate-400">—</span>}</div></td><td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{titleCase(customer.lead_source)}</span></td><td className="px-5 py-4 text-slate-500">{formatDate(customer.created_at)}</td><td className="px-5 py-4"><ChevronRight className="h-4 w-4 text-slate-300" /></td></tr>)}</tbody>
         </table>
         {!filtered.length && <div className="p-10 text-center"><p className="font-black text-slate-900">No matching customers</p><p className="mt-2 text-sm text-slate-500">Try a different search.</p></div>}
       </div>
