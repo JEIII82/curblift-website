@@ -6,6 +6,24 @@ import './walkway-offer.js'
 import App from './App.jsx'
 import { applySeo } from './seo.js'
 
+const LEGACY_LEAD_INTAKE_URL = 'https://cfrdooivdzjuqsauhaqy.supabase.co/functions/v1/lead-intake'
+const V2_LEAD_INTAKE_URL = 'https://ttathwanhbudynarcewr.supabase.co/functions/v1/lead-intake'
+const V2_ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0YXRod2FuaGJ1ZHluYXJjZXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MDE5MDgsImV4cCI6MjEwNjk3NzkwOH0.u1Qlma9TQBVWX0Br9kNeBh9K4gqKu87LmUjFWoV8K1A'
+
+// Compatibility bridge: the existing QuoteForm still calls the legacy endpoint.
+// Route that one request to V2 at the network boundary so no new lead data lands in the old OS.
+const nativeFetch = window.fetch.bind(window)
+window.fetch = (input, init = {}) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  if (url !== LEGACY_LEAD_INTAKE_URL) return nativeFetch(input, init)
+
+  const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined))
+  headers.set('Authorization', `Bearer ${V2_ANON_JWT}`)
+  headers.set('apikey', V2_ANON_JWT)
+
+  return nativeFetch(V2_LEAD_INTAKE_URL, { ...init, headers })
+}
+
 applySeo()
 
 createRoot(document.getElementById('root')).render(
