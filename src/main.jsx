@@ -24,10 +24,35 @@ window.fetch = (input, init = {}) => {
   return nativeFetch(V2_LEAD_INTAKE_URL, { ...init, headers })
 }
 
+function enforceQuoteEmailRequirement() {
+  const email = document.getElementById('quote-email')
+  if (!(email instanceof HTMLInputElement)) return
+
+  email.required = true
+  email.setAttribute('aria-describedby', 'quote-email-help')
+
+  const label = document.querySelector('label[for="quote-email"]')
+  if (label) label.textContent = 'Email'
+
+  if (!document.getElementById('quote-email-help')) {
+    const help = document.createElement('p')
+    help.id = 'quote-email-help'
+    help.className = 'mt-2 text-xs leading-5 text-slate-500'
+    help.textContent = 'We’ll send your quote and secure approval link here.'
+    email.insertAdjacentElement('afterend', help)
+  }
+}
+
 applySeo()
 
-createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root')
+createRoot(rootElement).render(
   <StrictMode>
     <App />
   </StrictMode>,
 )
+
+// QuoteForm is rendered by React, so keep the public form contract in sync after route/render changes.
+const formObserver = new MutationObserver(enforceQuoteEmailRequirement)
+formObserver.observe(rootElement, { childList: true, subtree: true })
+requestAnimationFrame(enforceQuoteEmailRequirement)
