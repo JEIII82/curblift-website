@@ -52,7 +52,5 @@ createRoot(rootElement).render(
   </StrictMode>,
 )
 
-// QuoteForm is rendered by React, so keep the public form contract in sync after route/render changes.
-const formObserver = new MutationObserver(enforceQuoteEmailRequirement)
-formObserver.observe(rootElement, { childList: true, subtree: true })
+// Contact is a full-page navigation in this site, so a one-shot post-render sync is sufficient.
 requestAnimationFrame(enforceQuoteEmailRequirement)
